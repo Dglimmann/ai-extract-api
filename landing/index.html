@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Glimmann API — turn messy text into schema-validated JSON with confidence, warnings, and API keys." />
+  <title>Glimmann API — Structured Extraction</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; line-height: 1.5; }
+    a { color: inherit; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 48px 20px; }
+    .badge { display: inline-flex; gap: 10px; align-items: center; font-size: 12px; opacity: .8; letter-spacing: .12em; text-transform: uppercase; }
+    .hero { padding: 10px 0 28px; }
+    h1 { font-size: clamp(34px, 4vw, 54px); line-height: 1.05; margin: 14px 0 12px; }
+    p.lead { font-size: clamp(16px, 1.6vw, 20px); opacity: .85; max-width: 60ch; margin: 0 0 22px; }
+    .cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 18px 0 12px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(127,127,127,.35); text-decoration: none; font-weight: 600; }
+    .btn.primary { background: rgba(127,127,127,.15); }
+    .grid { display: grid; gap: 14px; grid-template-columns: repeat(12, 1fr); margin-top: 26px; }
+    .card { grid-column: span 12; border: 1px solid rgba(127,127,127,.25); border-radius: 14px; padding: 16px; background: rgba(127,127,127,.06); }
+    @media (min-width: 840px) {
+      .card.third { grid-column: span 4; }
+      .card.half { grid-column: span 6; }
+    }
+    .card h3 { margin: 0 0 8px; font-size: 16px; }
+    .muted { opacity: .8; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    pre { margin: 0; padding: 14px; border-radius: 12px; border: 1px solid rgba(127,127,127,.25); overflow: auto; background: rgba(0,0,0,.18); }
+    .section { margin-top: 44px; }
+    .section h2 { margin: 0 0 12px; font-size: 22px; }
+    .kvs { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .kv { border: 1px solid rgba(127,127,127,.25); border-radius: 12px; padding: 14px; background: rgba(127,127,127,.06); }
+    .kv b { display: block; margin-bottom: 6px; }
+    .pricing { display: grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 840px) { .pricing { grid-template-columns: repeat(3, 1fr); } }
+    .price { font-size: 30px; font-weight: 800; margin: 6px 0 2px; }
+    .small { font-size: 12px; opacity: .8; }
+    footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid rgba(127,127,127,.25); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+    .pill { display: inline-flex; gap: 8px; padding: 6px 10px; border: 1px solid rgba(127,127,127,.25); border-radius: 999px; font-size: 12px; opacity: .9; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="badge">
+      <span class="pill">Glimmann API</span>
+      <span class="muted">Structured extraction for developers</span>
+    </div>
+
+    <header class="hero">
+      <h1>Turn messy text into <span class="muted">production-ready JSON</span>.</h1>
+      <p class="lead">
+        Glimmann API extracts <b>schema-validated JSON</b> from unstructured text (emails, invoices, documents).
+        Built for integration: <b>API keys</b>, <b>usage limits</b>, <b>warnings</b>, and a <b>confidence score</b>.
+      </p>
+
+      <div class="cta">
+        <!-- Replace with your Render URL -->
+        <a class="btn primary" href="https://ai-extract-api.onrender.com/docs" target="_blank" rel="noreferrer">Open Swagger Docs</a>
+        <a class="btn" href="#get-key">Get an API Key</a>
+        <a class="btn" href="#pricing">Pricing</a>
+      </div>
+
+      <div class="grid">
+        <div class="card third">
+          <h3>Schema-enforced output</h3>
+          <div class="muted">Your keys + nesting are guaranteed. Missing fields become <code>null</code>.</div>
+        </div>
+        <div class="card third">
+          <h3>Warnings + confidence</h3>
+          <div class="muted">Transparent extraction with a <code>confidence</code> score (0–1).</div>
+        </div>
+        <div class="card third">
+          <h3>API keys + limits</h3>
+          <div class="muted">Per-key daily limits + usage endpoint (<code>/me/usage</code>).</div>
+        </div>
+
+        <div class="card half">
+          <h3>Example request</h3>
+          <pre><code>curl -X POST https://ai-extract-api.onrender.com/extract \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Rechnung Nr. 2026-001 von ACME GmbH vom 2026-02-01. Gesamt: 249,90 EUR. Fällig: 2026-02-15.",
+    "schema": {
+      "company": null,
+      "invoice_number": null,
+      "date": null,
+      "due_date": null,
+      "amount_total": null,
+      "currency": null
+    },
+    "language": "de"
+  }'</code></pre>
+        </div>
+
+        <div class="card half">
+          <h3>Example response</h3>
+          <pre><code>{
+  "data": {
+    "company": "ACME GmbH",
+    "invoice_number": "2026-001",
+    "date": "2026-02-01",
+    "due_date": "2026-02-15",
+    "amount_total": 249.9,
+    "currency": "EUR"
+  },
+  "warnings": [],
+  "confidence": 1.0,
+  "model": "gpt-4.1-mini"
+}</code></pre>
+        </div>
+      </div>
+    </header>
+
+    <section class="section">
+      <h2>Why not call OpenAI directly?</h2>
+      <div class="kvs">
+        <div class="kv">
+          <b>Because apps need reliability.</b>
+          <div class="muted">
+            Glimmann API wraps LLM extraction with schema enforcement, consistent responses,
+            API keys, per-key limits, and usage reporting — so you can ship without building infrastructure first.
+          </div>
+        </div>
+        <div class="kv">
+          <b>Made for automation & integration.</b>
+          <div class="muted">
+            Works well with Make.com/Zapier, backend services, ETL pipelines, ticket systems, and any workflow that needs predictable JSON.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="pricing">
+      <h2>Pricing</h2>
+      <div class="pricing">
+        <div class="card">
+          <h3>Free</h3>
+          <div class="price">€0</div>
+          <div class="muted">50 requests/day • best for testing</div>
+          <ul class="muted">
+            <li>Schema-validated JSON</li>
+            <li>Warnings + confidence</li>
+            <li>Usage endpoint</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Pro</h3>
+          <div class="price">€19<span class="small">/mo</span></div>
+          <div class="muted">2,000 requests/day • for production</div>
+          <ul class="muted">
+            <li>Higher daily limits</li>
+            <li>Priority support</li>
+            <li>Custom model option (later)</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h3>Business</h3>
+          <div class="price">Custom</div>
+          <div class="muted">High volume • SLA • custom limits</div>
+          <ul class="muted">
+            <li>Custom limits</li>
+            <li>Dedicated support</li>
+            <li>Optional on-prem (later)</li>
+          </ul>
+        </div>
+      </div>
+      <p class="muted small" style="margin-top:10px">
+        Stripe automation can be added once there is steady demand. Early access is manual key issuance.
+      </p>
+    </section>
+
+    <section class="section" id="get-key">
+      <h2>Get an API key</h2>
+      <div class="kvs">
+        <div class="kv">
+          <b>Step 1 — Request access</b>
+          <div class="muted">
+            Email: <a href="mailto:dustinglimmann4@gmail.com">dustinglimmann4@gmail.com</a><br />
+            Subject: <code>Glimmann API key</code><br />
+            Include: use-case + expected daily volume.
+          </div>
+        </div>
+        <div class="kv">
+          <b>Step 2 — Receive your key</b>
+          <div class="muted">
+            You’ll get a key like <code>live_xxx...</code> plus your plan and daily limit.
+          </div>
+        </div>
+        <div class="kv">
+          <b>Step 3 — Call the API</b>
+          <div class="muted">Use <code>Authorization: Bearer YOUR_API_KEY</code> with <code>/extract</code> and <code>/me/usage</code>.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Status</h2>
+      <div class="kvs">
+        <div class="kv">
+          <b>Health</b>
+          <div class="muted"><code>GET /health</code> returns <code>{"ok": true}</code>.</div>
+        </div>
+        <div class="kv">
+          <b>Swagger</b>
+          <div class="muted">
+            Docs available at <a href="https://ai-extract-api.onrender.com/docs" target="_blank" rel="noreferrer">/docs</a>.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="muted small">© <span id="y"></span> Glimmann API • Made in Germany</div>
+      <div class="muted small">
+        <a href="https://ai-extract-api.onrender.com/docs" target="_blank" rel="noreferrer">Docs</a>
+        &nbsp;•&nbsp;
+        <a href="https://ai-extract-api.onrender.com/health" target="_blank" rel="noreferrer">Health</a>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    document.getElementById("y").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
