@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Datenschutz — GL API</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; line-height: 1.6; }
+    a { color: inherit; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 48px 20px; }
+    .card { border: 1px solid rgba(127,127,127,.25); border-radius: 14px; padding: 18px; background: rgba(127,127,127,.06); }
+    .muted { opacity: .85; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    ul { margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p><a href="/">&larr; Back</a></p>
+    <h1>Datenschutzerklärung</h1>
+
+    <div class="card">
+      <p class="muted">
+        Diese Seite beschreibt, welche Daten beim Besuch der Website und bei Nutzung der GL API verarbeitet werden.
+      </p>
+
+      <h2>1. Verantwortlicher</h2>
+      <p>
+        <span>[Dein Name / Firma]</span><br />
+        <span>[Adresse]</span><br />
+        E-Mail: <a href="mailto:dustinglimmann4@gmail.com">dustinglimmann4@gmail.com</a>
+      </p>
+
+      <h2>2. Webhosting / Server-Logs</h2>
+      <p class="muted">
+        Beim Aufruf der Website/Api verarbeitet der Hosting-Anbieter technische Zugriffsdaten (z. B. IP-Adresse, Zeitpunkt,
+        URL, User-Agent) zur Bereitstellung und Sicherheit (Server-Logs).
+      </p>
+
+      <h2>3. Nutzung der API</h2>
+      <p class="muted">
+        Bei API-Aufrufen werden Requests verarbeitet, um den Dienst bereitzustellen (Extraktion), Missbrauch zu verhindern
+        (API-Key, Limits) und die Stabilität zu überwachen (Logs).
+      </p>
+      <ul class="muted">
+        <li><b>API-Key</b>: wird zur Authentifizierung und zur Zuordnung von Limits/Usage genutzt.</li>
+        <li><b>Usage</b>: Anzahl der Requests wird gespeichert (z. B. pro Tag), um Limits durchzusetzen.</li>
+        <li><b>Logs</b>: Request-ID, Pfad, Status, Response-Time (und ggf. weitere technische Daten).</li>
+      </ul>
+
+      <h2>4. Verarbeitung von Inhalten</h2>
+      <p class="muted">
+        Der von dir gesendete Text wird zur Extraktion an ein LLM (OpenAI) übermittelt.
+        Bitte sende keine sensiblen Daten, wenn du das vermeiden willst (z. B. Gesundheitsdaten, Ausweisnummern).
+      </p>
+
+      <h2>5. Speicherdauer</h2>
+      <p class="muted">
+        Usage-Daten und Logs werden nur so lange gespeichert, wie es für Betrieb/Sicherheit/Abrechnung erforderlich ist.
+        (Du kannst hier später konkrete Zeiträume ergänzen, z. B. Logs 14 Tage.)
+      </p>
+
+      <h2>6. Deine Rechte</h2>
+      <p class="muted">
+        Du hast Rechte auf Auskunft, Berichtigung, Löschung, Einschränkung, Widerspruch und Datenübertragbarkeit im Rahmen
+        der DSGVO.
+      </p>
+
+      <h2>7. Kontakt</h2>
+      <p class="muted">
+        Bei Fragen: <a href="mailto:dustinglimmann4@gmail.com">dustinglimmann4@gmail.com</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>

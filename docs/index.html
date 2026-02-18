@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Glimmann API — turn messy text into schema-validated JSON with confidence, warnings, and API keys." />
-  <title>Glimmann API — Structured Extraction</title>
+  <meta name="description" content="GL API — turn messy text into schema-validated JSON with confidence, warnings, and API keys." />
+  <title>GL API — Structured Extraction</title>
   <style>
     :root { color-scheme: light dark; }
     body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; line-height: 1.5; }
@@ -44,14 +44,14 @@
 <body>
   <div class="wrap">
     <div class="badge">
-      <span class="pill">Glimmann API</span>
+      <span class="pill">GL API</span>
       <span class="muted">Structured extraction for developers</span>
     </div>
 
     <header class="hero">
       <h1>Turn messy text into <span class="muted">production-ready JSON</span>.</h1>
       <p class="lead">
-        Glimmann API extracts <b>schema-validated JSON</b> from unstructured text (emails, invoices, documents).
+        GL API extracts <b>schema-validated JSON</b> from unstructured text (emails, invoices, documents).
         Built for integration: <b>API keys</b>, <b>usage limits</b>, <b>warnings</b>, and a <b>confidence score</b>.
       </p>
 
@@ -73,7 +73,7 @@
         </div>
         <div class="card third">
           <h3>API keys + limits</h3>
-          <div class="muted">Per-key daily limits + usage endpoint (<code>/me/usage</code>).</div>
+          <div class="muted">Per-key limits + usage endpoint (<code>/me/usage</code>).</div>
         </div>
 
         <div class="card half">
@@ -120,7 +120,7 @@
         <div class="kv">
           <b>Because apps need reliability.</b>
           <div class="muted">
-            Glimmann API wraps LLM extraction with schema enforcement, consistent responses,
+            GL API wraps LLM extraction with schema enforcement, consistent responses,
             API keys, per-key limits, and usage reporting — so you can ship without building infrastructure first.
           </div>
         </div>
@@ -134,45 +134,58 @@
     </section>
 
     <section class="section" id="pricing">
-      <h2>Pricing</h2>
-      <div class="pricing">
-        <div class="card">
-          <h3>Free</h3>
-          <div class="price">€0</div>
-          <div class="muted">50 requests/day • best for testing</div>
-          <ul class="muted">
-            <li>Schema-validated JSON</li>
-            <li>Warnings + confidence</li>
-            <li>Usage endpoint</li>
-          </ul>
-        </div>
+  <h2>Pricing</h2>
 
-        <div class="card">
-          <h3>Pro</h3>
-          <div class="price">€19<span class="small">/mo</span></div>
-          <div class="muted">2,000 requests/day • for production</div>
-          <ul class="muted">
-            <li>Higher daily limits</li>
-            <li>Priority support</li>
-            <li>Custom model option (later)</li>
-          </ul>
-        </div>
+  <div class="pricing">
+    <div class="card">
+      <h3>Free</h3>
+      <div class="price">€0</div>
+      <div class="muted">200 requests/month • best for testing</div>
+      <ul class="muted">
+        <li>Schema-validated JSON</li>
+        <li>Warnings + confidence</li>
+        <li>Usage endpoint</li>
+      </ul>
+    </div>
 
-        <div class="card">
-          <h3>Business</h3>
-          <div class="price">Custom</div>
-          <div class="muted">High volume • SLA • custom limits</div>
-          <ul class="muted">
-            <li>Custom limits</li>
-            <li>Dedicated support</li>
-            <li>Optional on-prem (later)</li>
-          </ul>
-        </div>
-      </div>
-      <p class="muted small" style="margin-top:10px">
-        Stripe automation can be added once there is steady demand. Early access is manual key issuance.
-      </p>
-    </section>
+    <div class="card">
+      <h3>Pro</h3>
+      <div class="price">€19<span class="small">/mo</span></div>
+      <div class="muted">10,000 requests/month • for production</div>
+      <ul class="muted">
+        <li>Higher monthly limits</li>
+        <li>Priority support</li>
+        <li>Custom model option (later)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Business</h3>
+      <div class="price">€49<span class="small">/mo</span></div>
+      <div class="muted">50,000 requests/month • for teams</div>
+      <ul class="muted">
+        <li>Even higher limits</li>
+        <li>Dedicated support</li>
+        <li>Optional on-prem (later)</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>Scale</h3>
+      <div class="price">Custom</div>
+      <div class="muted">High volume • SLA • custom limits</div>
+      <ul class="muted">
+        <li>Custom limits</li>
+        <li>SLA with uptime guarantees</li>
+        <li>Dedicated support + onboarding</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="muted small" style="margin-top:10px">
+    Stripe automation can be added once there is steady demand. Early access is manual key issuance.
+  </p>
+</section>
 
     <section class="section" id="get-key">
       <h2>Get an API key</h2>
@@ -181,14 +194,14 @@
           <b>Step 1 — Request access</b>
           <div class="muted">
             Email: <a href="mailto:dustinglimmann4@gmail.com">dustinglimmann4@gmail.com</a><br />
-            Subject: <code>Glimmann API key</code><br />
-            Include: use-case + expected daily volume.
+            Subject: <code>GL API key</code><br />
+            Include: use-case + expected monthly volume.
           </div>
         </div>
         <div class="kv">
           <b>Step 2 — Receive your key</b>
           <div class="muted">
-            You’ll get a key like <code>live_xxx...</code> plus your plan and daily limit.
+            You’ll get a key like <code>YOUR_API_KEY</code> plus your plan and monthly limit.
           </div>
         </div>
         <div class="kv">
@@ -215,11 +228,15 @@
     </section>
 
     <footer>
-      <div class="muted small">© <span id="y"></span> Glimmann API • Made in Germany</div>
+      <div class="muted small">© <span id="y"></span> GL API • Made in Germany</div>
       <div class="muted small">
-        <a href="https://ai-extract-api.onrender.com/docs" target="_blank" rel="noreferrer">Docs</a>
+        <a href="/docs" target="_blank">Docs</a>
         &nbsp;•&nbsp;
-        <a href="https://ai-extract-api.onrender.com/health" target="_blank" rel="noreferrer">Health</a>
+        <a href="/health" target="_blank">Health</a>
+        &nbsp;•&nbsp;
+  <a href="/impressum.html">Imprint</a>
+  &nbsp;•&nbsp;
+  <a href="/privacy.html">Privacy</a>
       </div>
     </footer>
   </div>
