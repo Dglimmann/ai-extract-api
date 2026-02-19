@@ -49,6 +49,14 @@ class ExtractResponse(BaseModel):
 async def health():
     return {"ok": True}
 
+@app.get("/")
+async def root():
+    return {
+        "name": "GL API",
+        "status": "online",
+        "docs": "/docs"
+    }
+
 @app.post("/extract", response_model=ExtractResponse)
 async def extract(req: ExtractRequest, key_and_meta=Depends(require_api_key)):
     api_key, meta = key_and_meta
