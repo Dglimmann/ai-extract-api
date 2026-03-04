@@ -3,274 +3,462 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="GL API — turn messy text into schema-validated JSON with confidence, warnings, and API keys." />
-  <title>GL API — Structured Extraction</title>
+  <meta name="description" content="GL Api — extract invoice data from PDFs into clean JSON (with confidence + warnings). Built for Make/Zapier automation agencies." />
+  <title>GL Api — Invoice PDF to JSON for Make & Zapier</title>
   <style>
-    :root { color-scheme: light dark; }
+    :root { color-scheme: light dark; --b: rgba(127,127,127,.25); --bg: rgba(127,127,127,.06); --bg2: rgba(0,0,0,.14); }
     body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; line-height: 1.5; }
     a { color: inherit; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 48px 20px; }
-    .badge { display: inline-flex; gap: 10px; align-items: center; font-size: 12px; opacity: .8; letter-spacing: .12em; text-transform: uppercase; }
-    .hero { padding: 10px 0 28px; }
-    h1 { font-size: clamp(34px, 4vw, 54px); line-height: 1.05; margin: 14px 0 12px; }
-    p.lead { font-size: clamp(16px, 1.6vw, 20px); opacity: .85; max-width: 60ch; margin: 0 0 22px; }
-    .cta { display: flex; flex-wrap: wrap; gap: 12px; margin: 18px 0 12px; }
-    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(127,127,127,.35); text-decoration: none; font-weight: 600; }
-    .btn.primary { background: rgba(127,127,127,.15); }
-    .grid { display: grid; gap: 14px; grid-template-columns: repeat(12, 1fr); margin-top: 26px; }
-    .card { grid-column: span 12; border: 1px solid rgba(127,127,127,.25); border-radius: 14px; padding: 16px; background: rgba(127,127,127,.06); }
-    @media (min-width: 840px) {
+    .wrap { max-width: 1020px; margin: 0 auto; padding: 48px 20px; }
+    .top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .badge { display:flex; gap: 10px; align-items:center; font-size: 12px; opacity: .9; letter-spacing: .12em; text-transform: uppercase; }
+    .pill { display:inline-flex; gap:8px; padding:6px 10px; border:1px solid var(--b); border-radius:999px; font-size:12px; opacity:.95; }
+    .muted { opacity: .82; }
+    .hero { padding: 12px 0 18px; }
+    h1 { font-size: clamp(34px, 4vw, 56px); line-height: 1.05; margin: 14px 0 12px; }
+    p.lead { font-size: clamp(16px, 1.6vw, 20px); opacity: .85; max-width: 70ch; margin: 0 0 18px; }
+    .cta { display:flex; flex-wrap:wrap; gap: 12px; margin: 16px 0 10px; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(127,127,127,.35); text-decoration:none; font-weight: 700; }
+    .btn.primary { background: rgba(127,127,127,.16); }
+    .btn.small { padding: 8px 10px; font-size: 13px; font-weight: 650; opacity: .95; }
+    .grid { display:grid; gap: 14px; grid-template-columns: repeat(12, 1fr); margin-top: 18px; }
+    .card { grid-column: span 12; border: 1px solid var(--b); border-radius: 14px; padding: 16px; background: var(--bg); }
+    @media (min-width: 900px) {
       .card.third { grid-column: span 4; }
-      .card.half { grid-column: span 6; }
+      .card.half  { grid-column: span 6; }
     }
     .card h3 { margin: 0 0 8px; font-size: 16px; }
-    .muted { opacity: .8; }
-    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-    pre { margin: 0; padding: 14px; border-radius: 12px; border: 1px solid rgba(127,127,127,.25); overflow: auto; background: rgba(0,0,0,.18); }
+    code, pre, textarea, input { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    pre { margin: 0; padding: 14px; border-radius: 12px; border: 1px solid var(--b); overflow: auto; background: var(--bg2); }
     .section { margin-top: 44px; }
     .section h2 { margin: 0 0 12px; font-size: 22px; }
-    .kvs { display: grid; grid-template-columns: 1fr; gap: 10px; }
-    .kv { border: 1px solid rgba(127,127,127,.25); border-radius: 12px; padding: 14px; background: rgba(127,127,127,.06); }
-    .kv b { display: block; margin-bottom: 6px; }
-    .pricing { display: grid; grid-template-columns: 1fr; gap: 14px; }
-    @media (min-width: 840px) { .pricing { grid-template-columns: repeat(3, 1fr); } }
-    .price { font-size: 30px; font-weight: 800; margin: 6px 0 2px; }
-    .small { font-size: 12px; opacity: .8; }
-    footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid rgba(127,127,127,.25); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
-    .pill { display: inline-flex; gap: 8px; padding: 6px 10px; border: 1px solid rgba(127,127,127,.25); border-radius: 999px; font-size: 12px; opacity: .9; }
+    .kvs { display:grid; grid-template-columns: 1fr; gap: 10px; }
+    .kv { border: 1px solid var(--b); border-radius: 12px; padding: 14px; background: var(--bg); }
+    .kv b { display:block; margin-bottom: 6px; }
+    .pricing { display:grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 900px) { .pricing { grid-template-columns: repeat(4, 1fr); } }
+    .price { font-size: 30px; font-weight: 850; margin: 6px 0 2px; }
+    .small { font-size: 12px; opacity: .82; }
+    ul { margin: 10px 0 0; padding-left: 18px; }
+    .demoWrap { display:grid; gap: 12px; grid-template-columns: 1fr; }
+    @media (min-width: 900px) { .demoWrap { grid-template-columns: 1fr 1fr; } }
+    .demoBox { border: 1px solid var(--b); border-radius: 14px; background: var(--bg); padding: 14px; }
+    .row { display:flex; flex-wrap:wrap; gap: 10px; align-items:center; }
+    input[type="file"]{ max-width: 100%; }
+    .status { font-size: 13px; opacity: .9; }
+    .ok { opacity: .95; }
+    .warn { opacity: .95; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--b); display:flex; flex-wrap:wrap; gap: 10px; align-items:center; justify-content:space-between; }
+    .links a { text-decoration: none; border-bottom: 1px dotted rgba(127,127,127,.5); }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <div class="badge">
-      <span class="pill">GL API</span>
-      <span class="muted">Structured extraction for developers</span>
+
+    <div class="top">
+      <div class="badge">
+        <span class="pill">GL Api</span>
+        <span class="muted">Invoice PDF → JSON for automation agencies</span>
+      </div>
+
+      <div class="row">
+        <a class="btn small" href="#demo">Live Demo</a>
+        <a class="btn small" href="#blueprint">Make Blueprint</a>
+        <a class="btn small" href="#pricing">Pricing</a>
+      </div>
     </div>
 
     <header class="hero">
-      <h1>Stop broken automations caused by unstable LLM output.</h1>
+      <h1>Extract invoice data from PDFs — ready for Make &amp; Zapier.</h1>
 
-<p class="lead">
-GL API converts messy text into <b>schema-safe JSON</b> —
-so your Make/Zapier workflows don’t break when the model changes its formatting.
-Includes confidence scoring, usage limits and predictable structure.
-</p>
-
+      <p class="lead">
+        Upload an invoice PDF and get clean, structured JSON in seconds — with <b>confidence</b> and <b>warnings</b>.
+        No regex. No brittle PDF parsers. Built for automation agencies handling client workflows.
+      </p>
 
       <div class="cta">
-        <!-- Replace with your Render URL -->
-        <a class="btn primary" href="https://ai-extract-api.onrender.com/docs" target="_blank" rel="noreferrer">Open Swagger Docs</a>
+        <a class="btn primary" href="#demo">Try the Live Demo</a>
+        <a class="btn" href="#blueprint">Download Make Blueprint</a>
         <a class="btn" href="#get-key">Get an API Key</a>
-        <a class="btn" href="#pricing">Pricing</a>
+        <a class="btn" id="apiDocsLink" href="https://ai-extract-api.onrender.com/docs" target="_blank" rel="noreferrer">API Docs</a>
       </div>
 
       <div class="grid">
         <div class="card third">
-          <h3>Schema-enforced output</h3>
-          <div class="muted">Your keys + nesting are guaranteed. Missing fields become <code>null</code>.</div>
+          <h3>Schema-safe JSON</h3>
+          <div class="muted">Your keys + nesting are enforced. Missing fields become <code>null</code>.</div>
         </div>
         <div class="card third">
-          <h3>Warnings + confidence</h3>
-          <div class="muted">Transparent extraction with a <code>confidence</code> score (0–1).</div>
+          <h3>Confidence + warnings</h3>
+          <div class="muted">Decide in Make/Zapier whether to auto-approve or flag uncertain extractions.</div>
         </div>
         <div class="card third">
-          <h3>API keys + limits</h3>
-          <div class="muted">Per-key limits + usage tracking (<code>/me/usage</code>).</div>
-        </div>
-
-        <div class="card half">
-          <h3>Example request</h3>
-          <pre><code>curl -X POST https://ai-extract-api.onrender.com/extract \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Rechnung Nr. 2026-001 von ACME GmbH vom 2026-02-01. Gesamt: 249,90 EUR. Fällig: 2026-02-15.",
-    "schema": {
-      "company": null,
-      "invoice_number": null,
-      "date": null,
-      "due_date": null,
-      "amount_total": null,
-      "currency": null
-    },
-    "language": "de"
-  }'</code></pre>
-        </div>
-
-        <div class="card half">
-          <h3>Example response</h3>
-          <pre><code>{
-  "data": {
-    "company": "ACME GmbH",
-    "invoice_number": "2026-001",
-    "date": "2026-02-01",
-    "due_date": "2026-02-15",
-    "amount_total": 249.9,
-    "currency": "EUR"
-  },
-  "warnings": [],
-  "confidence": 1.0,
-  "model": "gpt-4.1-mini"
-}</code></pre>
+          <h3>Built for agencies</h3>
+          <div class="muted">API keys + usage limits + <code>/me/usage</code> for multi-client workflows.</div>
         </div>
       </div>
     </header>
 
-    <section class="section">
-  <h2>Built for automation builders</h2>
-  <div class="kvs">
-    <div class="kv">
-      <b>No more fragile JSON parsing.</b>
-      <div class="muted">
-        Your schema is enforced. Missing fields become null. Keys never disappear.
-      </div>
-    </div>
-    <div class="kv">
-      <b>Confidence score included.</b>
-      <div class="muted">
-        Decide in your workflow whether to auto-approve or flag uncertain extractions.
-      </div>
-    </div>
-    <div class="kv">
-      <b>Per-key limits + usage tracking.</b>
-      <div class="muted">
-        Perfect for agencies managing multiple clients.
-      </div>
-    </div>
-  </div>
-</section>
+    <!-- LIVE DEMO -->
+    <section class="section" id="demo">
+      <h2>Live invoice demo</h2>
+      <p class="muted" style="margin-top:-6px; max-width:80ch">
+        Upload an invoice PDF and see the extracted JSON instantly.
+        <span class="mono">(Note: demo endpoint needs to exist on the API: <b>POST /demo/invoice</b>)</span>
+      </p>
 
+      <div class="demoWrap">
+        <div class="demoBox">
+          <h3 style="margin:0 0 10px;">1) Upload invoice PDF</h3>
+          <div class="row" style="margin-bottom:10px;">
+            <input id="pdfFile" type="file" accept="application/pdf" />
+            <button class="btn small" id="runDemoBtn" type="button">Run Demo</button>
+          </div>
+          <div class="status muted" id="demoStatus">
+            Tip: If you don’t have a PDF, use a public “sample invoice pdf” from Google and try it here.
+          </div>
 
-    <section class="section">
-      <h2>Why not call OpenAI directly?</h2>
+          <div class="kv" style="margin-top:12px;">
+            <b>Invoice JSON schema (MVP)</b>
+            <div class="muted">This is the fixed output shape used in the demo.</div>
+            <pre style="margin-top:10px;"><code id="schemaBlock">{
+  "supplier_name": null,
+  "invoice_number": null,
+  "invoice_date": null,
+  "due_date": null,
+  "currency": null,
+  "total_amount": null,
+  "vat_amount": null
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="demoBox">
+          <h3 style="margin:0 0 10px;">2) Result</h3>
+          <pre><code id="demoResult">{
+  "data": {
+    "supplier_name": null,
+    "invoice_number": null,
+    "invoice_date": null,
+    "due_date": null,
+    "currency": null,
+    "total_amount": null,
+    "vat_amount": null
+  },
+  "warnings": [],
+  "confidence": 0.0,
+  "model": "gpt-4.1-mini"
+}</code></pre>
+
+          <div class="row" style="margin-top:10px;">
+            <span class="pill">Confidence: <span id="confVal">—</span></span>
+            <span class="pill">Warnings: <span id="warnVal">—</span></span>
+          </div>
+
+          <p class="muted small" style="margin-top:12px;">
+            If confidence is low or warnings are present, route to manual review in Make/Zapier.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- BLUEPRINT -->
+    <section class="section" id="blueprint">
+      <h2>Make Blueprint (no official app needed)</h2>
       <div class="kvs">
         <div class="kv">
-          <b>Because apps need reliability.</b>
+          <b>Download &amp; import in Make</b>
           <div class="muted">
-            GL API wraps LLM extraction with schema enforcement, consistent responses,
-            API keys, per-key limits, and usage reporting — so you can ship without building infrastructure first.
+            Import a ready-to-run scenario and plug in your API key.
+            You’ll have invoice extraction integrated in minutes.
+          </div>
+          <div class="cta" style="margin-top:12px;">
+            <!-- Put your blueprint file into your GitHub Pages repo, e.g. /assets/glapi-make-blueprint.json -->
+            <a class="btn primary" href="/assets/glapi-invoice-blueprint.json" download>Download Make Blueprint</a>
+            <a class="btn" href="#get-key">Get API Key</a>
+          </div>
+          <p class="muted small" style="margin-top:8px;">
+            Blueprint file path: <code>/assets/glapi-invoice-blueprint.json</code> (add it to your repo).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY -->
+    <section class="section">
+      <h2>Built for automation agencies</h2>
+      <div class="kvs">
+        <div class="kv">
+          <b>Stop fragile PDF parsing.</b>
+          <div class="muted">
+            Traditional parsers break when invoice layouts change. GL Api extracts into a fixed schema and returns reliability signals.
           </div>
         </div>
         <div class="kv">
-          <b>Made for automation & integration.</b>
+          <b>Reliability signals included.</b>
           <div class="muted">
-            Works well with Make.com/Zapier, backend services, ETL pipelines, ticket systems, and any workflow that needs predictable JSON.
+            Use confidence + warnings to decide: auto-approve, request clarification, or send to manual review.
+          </div>
+        </div>
+        <div class="kv">
+          <b>Agency-friendly usage control.</b>
+          <div class="muted">
+            API keys and per-key limits keep your client automations stable and predictable.
           </div>
         </div>
       </div>
     </section>
 
+    <!-- EXAMPLE -->
+    <section class="section">
+      <h2>Example (API)</h2>
+      <div class="grid">
+        <div class="card half">
+          <h3>Request</h3>
+          <pre><code>curl -X POST https://ai-extract-api.onrender.com/extract \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Invoice No. 2026-001 from ACME GmbH dated 2026-02-01. Total: 249.90 EUR. Due: 2026-02-15.",
+    "schema": {
+      "supplier_name": null,
+      "invoice_number": null,
+      "invoice_date": null,
+      "due_date": null,
+      "total_amount": null,
+      "currency": null,
+      "vat_amount": null
+    },
+    "language": "en"
+  }'</code></pre>
+        </div>
+
+        <div class="card half">
+          <h3>Response</h3>
+          <pre><code>{
+  "data": {
+    "supplier_name": "ACME GmbH",
+    "invoice_number": "2026-001",
+    "invoice_date": "2026-02-01",
+    "due_date": "2026-02-15",
+    "currency": "EUR",
+    "total_amount": 249.9,
+    "vat_amount": 39.9
+  },
+  "warnings": [],
+  "confidence": 0.93,
+  "model": "gpt-4.1-mini"
+}</code></pre>
+        </div>
+      </div>
+
+      <div class="kvs" style="margin-top:14px;">
+        <div class="kv">
+          <b>Why not call OpenAI directly?</b>
+          <div class="muted">
+            Because automations need reliability: schema enforcement, predictable structure, confidence/warnings, API keys, limits, and usage reporting.
+            GL Api ships the infrastructure so you can ship workflows faster.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRICING -->
     <section class="section" id="pricing">
-  <h2>Pricing</h2>
+      <h2>Pricing</h2>
+      <p class="muted" style="margin-top:-6px;">
+        Limits are currently enforced <b>per day</b> (matching the current backend implementation).
+      </p>
 
-  <div class="pricing">
-    <div class="card">
-      <h3>Free</h3>
-      <div class="price">€0</div>
-      <div class="muted">200 requests/month • best for testing</div>
-      <ul class="muted">
-        <li>Schema-validated JSON</li>
-        <li>Warnings + confidence</li>
-        <li>Usage endpoint</li>
-      </ul>
-    </div>
+      <div class="pricing">
+        <div class="card">
+          <h3>Free</h3>
+          <div class="price">€0</div>
+          <div class="muted">50 requests/day • best for testing</div>
+          <ul class="muted">
+            <li>Schema-safe JSON</li>
+            <li>Confidence + warnings</li>
+            <li>Usage endpoint</li>
+          </ul>
+        </div>
 
-    <div class="card">
-      <h3>Pro</h3>
-      <div class="price">€29<span class="small">/mo</span></div>
-      <div class="muted">5.000 requests/month • for production</div>
-      <ul class="muted">
-        <li>Higher monthly limits</li>
-        <li>Priority support</li>
-        <li>Custom model option (later)</li>
-      </ul>
-    </div>
+        <div class="card">
+          <h3>Pro</h3>
+          <div class="price">€29<span class="small">/mo</span></div>
+          <div class="muted">200 requests/day • production</div>
+          <ul class="muted">
+            <li>Higher daily limits</li>
+            <li>Priority support</li>
+            <li>Custom schema guidance</li>
+          </ul>
+        </div>
 
-    <div class="card">
-      <h3>Business</h3>
-      <div class="price">€79<span class="small">/mo</span></div>
-      <div class="muted">20.000 requests/month • for teams</div>
-      <ul class="muted">
-        <li>Even higher limits</li>
-        <li>Dedicated support</li>
-        <li>Optional on-prem (later)</li>
-      </ul>
-    </div>
+        <div class="card">
+          <h3>Business</h3>
+          <div class="price">€79<span class="small">/mo</span></div>
+          <div class="muted">2,000 requests/day • teams</div>
+          <ul class="muted">
+            <li>High daily limits</li>
+            <li>Dedicated support</li>
+            <li>Early access to new features</li>
+          </ul>
+        </div>
 
-    <div class="card">
-      <h3>Scale</h3>
-      <div class="price">Custom</div>
-      <div class="muted">High volume • SLA • custom limits</div>
-      <ul class="muted">
-        <li>Custom limits</li>
-        <li>SLA with uptime guarantees</li>
-        <li>Dedicated support + onboarding</li>
-      </ul>
-    </div>
-  </div>
+        <div class="card">
+          <h3>Scale</h3>
+          <div class="price">Custom</div>
+          <div class="muted">High volume • SLA • custom limits</div>
+          <ul class="muted">
+            <li>Custom limits</li>
+            <li>SLA &amp; onboarding</li>
+            <li>Security review support</li>
+          </ul>
+        </div>
+      </div>
 
-  <p class="muted small" style="margin-top:10px">
-    Stripe automation can be added once there is steady demand. Early access is manual key issuance.
-  </p>
-</section>
+      <p class="muted small" style="margin-top:10px;">
+        Payments can be manual at first. Stripe automation can be added once demand is steady.
+      </p>
+    </section>
 
+    <!-- GET KEY -->
     <section class="section" id="get-key">
       <h2>Get an API key</h2>
       <div class="kvs">
         <div class="kv">
           <b>Step 1 — Request access</b>
           <div class="muted">
-            We reply within 24h: <a href="mailto:dustinglimmann4@gmail.com">dustinglimmann4@gmail.com</a><br />
-            Subject: <code>GL API key</code><br />
-            Include: use-case + expected monthly volume.
+            Email: <a href="mailto:dustinglimmann4@gmail.com">dustinglimmann4@gmail.com</a><br />
+            Subject: <code>GL Api key</code><br />
+            Include: use case + expected daily volume + Make/Zapier link (optional).
           </div>
         </div>
         <div class="kv">
           <b>Step 2 — Receive your key</b>
           <div class="muted">
-            You’ll get a key like <code>YOUR_API_KEY</code> plus your plan and monthly limit.
+            You’ll get a key like <code>dev_test_key_123</code> with a plan and daily limit.
           </div>
         </div>
         <div class="kv">
-          <b>Step 3 — Call the API</b>
-          <div class="muted">Use <code>Authorization: Bearer YOUR_API_KEY</code> with <code>/extract</code> and <code>/me/usage</code>.</div>
+          <b>Step 3 — Start extracting</b>
+          <div class="muted">
+            Use <code>Authorization: Bearer YOUR_API_KEY</code> with <code>/extract</code> and <code>/me/usage</code>.
+          </div>
         </div>
       </div>
     </section>
 
+    <!-- STATUS -->
     <section class="section">
       <h2>Status</h2>
       <div class="kvs">
         <div class="kv">
-          <b>Health</b>
-          <div class="muted"><code>GET /health</code> returns <code>{"ok": true}</code>.</div>
+          <b>API Health</b>
+          <div class="muted">Render: <a id="healthLink" href="https://ai-extract-api.onrender.com/health" target="_blank" rel="noreferrer"><code>GET /health</code></a></div>
         </div>
         <div class="kv">
-          <b>Swagger</b>
-          <div class="muted">
-            Docs available at <a href="https://ai-extract-api.onrender.com/docs" target="_blank" rel="noreferrer">/docs</a>.
-          </div>
+          <b>Docs</b>
+          <div class="muted">Render Swagger: <a id="swaggerLink" href="https://ai-extract-api.onrender.com/docs" target="_blank" rel="noreferrer">/docs</a></div>
         </div>
       </div>
     </section>
 
     <footer>
-      <div class="muted small">© <span id="y"></span> GL API • Made in Germany</div>
-      <div class="muted small">
-        <a href="/docs" target="_blank">Docs</a>
+      <div class="muted small">© <span id="y"></span> GL Api • glapi.dev</div>
+      <div class="muted small links">
+        <a href="https://ai-extract-api.onrender.com/docs" target="_blank" rel="noreferrer">API Docs</a>
         &nbsp;•&nbsp;
-        <a href="/health" target="_blank">Health</a>
+        <a href="https://ai-extract-api.onrender.com/health" target="_blank" rel="noreferrer">API Health</a>
         &nbsp;•&nbsp;
-  <a href="/impressum.html">Imprint</a>
-  &nbsp;•&nbsp;
-  <a href="/privacy.html">Privacy</a>
+        <a href="/impressum.html">Imprint</a>
+        &nbsp;•&nbsp;
+        <a href="/privacy.html">Privacy</a>
       </div>
     </footer>
   </div>
 
   <script>
     document.getElementById("y").textContent = new Date().getFullYear();
+
+    // Configure your API base (Render)
+    const API_BASE = "https://ai-extract-api.onrender.com";
+    const demoBtn = document.getElementById("runDemoBtn");
+    const demoStatus = document.getElementById("demoStatus");
+    const demoResult = document.getElementById("demoResult");
+    const confVal = document.getElementById("confVal");
+    const warnVal = document.getElementById("warnVal");
+
+    const schema = {
+      supplier_name: null,
+      invoice_number: null,
+      invoice_date: null,
+      due_date: null,
+      currency: null,
+      total_amount: null,
+      vat_amount: null
+    };
+
+    async function runPdfDemo(file) {
+      // This expects a future endpoint:
+      // POST ${API_BASE}/demo/invoice  (multipart/form-data with "file")
+      const fd = new FormData();
+      fd.append("file", file);
+
+      const res = await fetch(`${API_BASE}/demo/invoice`, {
+        method: "POST",
+        body: fd
+      });
+
+      if (!res.ok) {
+        const t = await res.text().catch(() => "");
+        throw new Error(`Demo endpoint not ready or error (${res.status}). ${t}`.trim());
+      }
+      return await res.json();
+    }
+
+    demoBtn.addEventListener("click", async () => {
+      const f = document.getElementById("pdfFile").files[0];
+      if (!f) {
+        demoStatus.textContent = "Please choose a PDF first.";
+        return;
+      }
+      if (f.size > 2 * 1024 * 1024) {
+        demoStatus.textContent = "File too large for demo (max 2MB).";
+        return;
+      }
+
+      demoStatus.textContent = "Running demo…";
+      demoBtn.disabled = true;
+
+      try {
+        const payload = await runPdfDemo(f);
+        demoResult.textContent = JSON.stringify(payload, null, 2);
+
+        const c = (payload && typeof payload.confidence === "number") ? payload.confidence : null;
+        const w = (payload && Array.isArray(payload.warnings)) ? payload.warnings : [];
+        confVal.textContent = (c === null) ? "—" : c.toFixed(2);
+        warnVal.textContent = w.length ? String(w.length) : "0";
+        demoStatus.textContent = "Done.";
+      } catch (err) {
+        demoStatus.textContent =
+          "Live demo not active yet (missing API endpoint /demo/invoice). " +
+          "Next step: add PDF upload demo endpoint on the Render API.";
+        // Show schema placeholder so UI still feels complete
+        demoResult.textContent = JSON.stringify({
+          data: schema,
+          warnings: ["demo_endpoint_missing"],
+          confidence: 0.0,
+          model: "gpt-4.1-mini"
+        }, null, 2);
+        confVal.textContent = "0.00";
+        warnVal.textContent = "1";
+        console.error(err);
+      } finally {
+        demoBtn.disabled = false;
+      }
+    });
   </script>
 </body>
 </html>
