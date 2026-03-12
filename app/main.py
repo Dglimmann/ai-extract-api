@@ -350,6 +350,9 @@ async def demo_invoice(
     if content_type not in allowed_types and not filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
+    if not pdf_bytes.startswith(b"%PDF"):
+        raise HTTPException(status_code=400, detail="Uploaded file is not a valid PDF")
+
     try:
         pdf_bytes = await file.read()
     except Exception:
