@@ -350,13 +350,11 @@ async def demo_invoice(
     if content_type not in allowed_types and not filename.endswith(".pdf"):
         raise HTTPException(status_code=400, detail="Only PDF files are allowed")
 
-    if not pdf_bytes.startswith(b"%PDF"):
-        raise HTTPException(status_code=400, detail="Uploaded file is not a valid PDF")
-
     try:
         pdf_bytes = await file.read()
     except Exception:
         raise HTTPException(status_code=400, detail="Could not read uploaded file")
+    
 
     if not pdf_bytes:
         raise HTTPException(status_code=400, detail="Uploaded file is empty")
@@ -367,6 +365,9 @@ async def demo_invoice(
             detail=f"PDF too large. Max size is {DEMO_MAX_FILE_MB:.1f} MB.",
         )
 
+    if not pdf_bytes.startswith(b"%PDF"):
+        raise HTTPException(status_code=400, detail="Uploaded file is not a valid PDF")
+    
     text = _extract_text_from_pdf_bytes(pdf_bytes)
 
     # Demo does not consume paid API key quota
