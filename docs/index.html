@@ -71,10 +71,10 @@
     </div>
 
     <header class="hero">
-      <h1>Extract invoice data from PDFs — ready for Make &amp; Zapier.</h1>
+      <h1>Turn messy invoice PDFs into structured JSON — ready for Make &amp; Zapier.</h1>
 
       <p class="lead">
-        Upload an invoice PDF and get clean, structured JSON in seconds — with <b>confidence</b> and <b>warnings</b>.
+        Upload an invoice PDF and get clean, structured JSON in seconds — with <b>confidence</b> and <b>warnings</b> so your workflows don't break.
         No regex. No brittle PDF parsers. Built for automation agencies handling client workflows.
       </p>
 
@@ -84,6 +84,9 @@
         <a class="btn" href="#get-key">Get an API Key</a>
         <a class="btn" id="apiDocsLink" href="https://ai-extract-api.onrender.com/docs" target="_blank" rel="noreferrer">API Docs</a>
       </div>
+          <p class="muted small" style="margin-top:8px;">
+  No signup required • Try instantly
+</p>
 
       <div class="grid">
         <div class="card third">
@@ -106,7 +109,6 @@
       <h2>Live invoice demo</h2>
       <p class="muted" style="margin-top:-6px; max-width:80ch">
         Upload an invoice PDF and see the extracted JSON instantly.
-        <span class="mono">(Note: demo endpoint needs to exist on the API: <b>POST /demo/invoice</b>)</span>
       </p>
 
       <div class="demoWrap">
@@ -160,6 +162,9 @@
           <p class="muted small" style="margin-top:12px;">
             If confidence is low or warnings are present, route to manual review in Make/Zapier.
           </p>
+          <p class="muted small" style="margin-top:8px;">
+  Use this output in Make, Zapier, Google Sheets, Airtable or your ERP.
+          </p>
         </div>
       </div>
     </section>
@@ -172,15 +177,15 @@
           <b>Download &amp; import in Make</b>
           <div class="muted">
             Import a ready-to-run scenario and plug in your API key.
-            You’ll have invoice extraction integrated in minutes.
+            You’ll have invoice extraction integrated in minutes. No coding required.
           </div>
           <div class="cta" style="margin-top:12px;">
-            <!-- Put your blueprint file into your GitHub Pages repo, e.g. /assets/glapi-make-blueprint.json -->
-            <a class="btn primary" href="assets/GL Api - Invoice Text -- JSON (Demo).blueprint-2.json" download>Download Make Blueprint</a>
+            <!-- Put your blueprint file into your GitHub Pages repo, e.g. /assets/glapi-invoice-blueprint.json -->
+            <a class="btn primary" href="assets/glapi-invoice-blueprint.json" download>Download Make Blueprint</a>
             <a class="btn" href="#get-key">Get API Key</a>
           </div>
           <p class="muted small" style="margin-top:8px;">
-            Blueprint file path: <code>/assets/GL Api - Invoice Text -- JSON (Demo).blueprint-2.json</code> (add it to your repo).
+            Blueprint file path: <code>/assets/glapi-invoice-blueprint.json</code> (add it to your repo).
           </p>
         </div>
       </div>
@@ -217,22 +222,14 @@
       <div class="grid">
         <div class="card half">
           <h3>Request</h3>
-          <pre><code>curl -X POST https://ai-extract-api.onrender.com/extract \
+          <pre><code>curl -X POST https://ai-extract-api.onrender.com/extract/invoice \
   -H "Authorization: Bearer YOUR_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "Invoice No. 2026-001 from ACME GmbH dated 2026-02-01. Total: 249.90 EUR. Due: 2026-02-15.",
-    "schema": {
-      "supplier_name": null,
-      "invoice_number": null,
-      "invoice_date": null,
-      "due_date": null,
-      "total_amount": null,
-      "currency": null,
-      "vat_amount": null
-    },
     "language": "en"
-  }'</code></pre>
+  }'
+</code></pre>
         </div>
 
         <div class="card half">
@@ -338,13 +335,13 @@
         <div class="kv">
           <b>Step 2 — Receive your key</b>
           <div class="muted">
-            You’ll get a key like <code>dev_test_key_123</code> with a plan and daily limit.
+            You’ll receive a private API key with your plan and usage limit.
           </div>
         </div>
         <div class="kv">
           <b>Step 3 — Start extracting</b>
           <div class="muted">
-            Use <code>Authorization: Bearer YOUR_API_KEY</code> with <code>/extract</code> and <code>/me/usage</code>.
+            Use <code>Authorization: Bearer YOUR_API_KEY</code> with <code>/extract/invoice</code> for invoice extraction and <code>/me/usage</code> for usage tracking.
           </div>
         </div>
       </div>
@@ -401,8 +398,7 @@
     };
 
     async function runPdfDemo(file) {
-      // This expects a future endpoint:
-      // POST ${API_BASE}/demo/invoice  (multipart/form-data with "file")
+      // Public live demo endpoint for invoice PDF uploads
       const fd = new FormData();
       fd.append("file", file);
 
@@ -413,7 +409,7 @@
 
       if (!res.ok) {
         const t = await res.text().catch(() => "");
-        throw new Error(`Demo endpoint not ready or error (${res.status}). ${t}`.trim());
+        throw new Error(`Demo request failed (${res.status}). ${t}`.trim());
       }
       return await res.json();
     }
@@ -443,12 +439,11 @@
         demoStatus.textContent = "Done.";
       } catch (err) {
         demoStatus.textContent =
-          "Live demo not active yet (missing API endpoint /demo/invoice). " +
-          "Next step: add PDF upload demo endpoint on the Render API.";
+          "Demo request failed. Please try another PDF or try again in a moment. ";
         // Show schema placeholder so UI still feels complete
         demoResult.textContent = JSON.stringify({
           data: schema,
-          warnings: ["demo_endpoint_missing"],
+          warnings: ["demo_request_failed"],
           confidence: 0.0,
           model: "gpt-4.1-mini"
         }, null, 2);
