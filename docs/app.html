@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Invoice Tool</title>
+  <style>
+    body {
+      font-family: Arial;
+      background: #111;
+      color: white;
+      max-width: 900px;
+      margin: auto;
+      padding: 40px;
+    }
+
+    h1 {
+      font-size: 28px;
+    }
+
+    .box {
+      background: #1c1c1c;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #333;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Upload your invoice</h1>
+<p>No Excel. No manual typing.</p>
+
+<div class="box">
+  <input type="file" id="file">
+  <button onclick="upload()">Upload</button>
+</div>
+
+<div class="box">
+  <h2>Invoices</h2>
+
+  <table id="table">
+    <tr>
+      <th>Date</th>
+      <th>Supplier</th>
+      <th>Total</th>
+      <th>VAT</th>
+    </tr>
+  </table>
+
+  <h3>Total: <span id="total">0</span></h3>
+</div>
+
+<script>
+const API = "https://ai-extract-api.onrender.com/demo/invoice";
+
+let invoices = [];
+
+async function upload() {
+  const file = document.getElementById("file").files[0];
+  if (!file) return alert("Select a file");
+
+  const fd = new FormData();
+  fd.append("file", file);
+
+  const res = await fetch(API, {
+    method: "POST",
+    body: fd
+  });
+
+  const data = await res.json();
+
+  invoices.push(data.data);
+  render();
+}
+
+function render() {
+  const table = document.getElementById("table");
+
+  table.innerHTML = `
+    <tr>
+      <th>Date</th>
+      <th>Supplier</th>
+      <th>Total</th>
+      <th>VAT</th>
+    </tr>
+  `;
+
+  let sum = 0;
+
+  invoices.forEach(inv => {
+    sum += inv.total_amount || 0;
+
+    table.innerHTML += `
+      <tr>
+        <td>${inv.invoice_date || "-"}</td>
+        <td>${inv.supplier_name || "-"}</td>
+        <td>${inv.total_amount || "-"}</td>
+        <td>${inv.vat_amount || "-"}</td>
+      </tr>
+    `;
+  });
+
+  document.getElementById("total").innerText = sum.toFixed(2);
+}
+</script>
+
+</body>
+</html>
