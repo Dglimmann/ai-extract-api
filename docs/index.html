@@ -1,459 +1,863 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="GL Api — extract invoice data from PDFs into clean JSON (with confidence + warnings). Built for Make/Zapier automation agencies." />
-  <title>GL Api — Invoice PDF to JSON for Make & Zapier</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GL Api – Rechnungen hochladen statt abtippen</title>
+  <meta name="description" content="Lade Rechnungen hoch und erhalte automatisch eine übersichtliche Tabelle mit Lieferant, Datum, Betrag und MwSt." />
   <style>
-    :root { color-scheme: light dark; --b: rgba(127,127,127,.25); --bg: rgba(127,127,127,.06); --bg2: rgba(0,0,0,.14); }
-    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; line-height: 1.5; }
-    a { color: inherit; }
-    .wrap { max-width: 1020px; margin: 0 auto; padding: 48px 20px; }
-    .top { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-    .badge { display:flex; gap: 10px; align-items:center; font-size: 12px; opacity: .9; letter-spacing: .12em; text-transform: uppercase; }
-    .pill { display:inline-flex; gap:8px; padding:6px 10px; border:1px solid var(--b); border-radius:999px; font-size:12px; opacity:.95; }
-    .muted { opacity: .82; }
-    .hero { padding: 12px 0 18px; }
-    h1 { font-size: clamp(34px, 4vw, 56px); line-height: 1.05; margin: 14px 0 12px; }
-    p.lead { font-size: clamp(16px, 1.6vw, 20px); opacity: .85; max-width: 70ch; margin: 0 0 18px; }
-    .cta { display:flex; flex-wrap:wrap; gap: 12px; margin: 16px 0 10px; }
-    .btn { display:inline-flex; align-items:center; justify-content:center; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(127,127,127,.35); text-decoration:none; font-weight: 700; }
-    .btn.primary { background: rgba(127,127,127,.16); }
-    .btn.small { padding: 8px 10px; font-size: 13px; font-weight: 650; opacity: .95; }
-    .grid { display:grid; gap: 14px; grid-template-columns: repeat(12, 1fr); margin-top: 18px; }
-    .card { grid-column: span 12; border: 1px solid var(--b); border-radius: 14px; padding: 16px; background: var(--bg); }
-    @media (min-width: 900px) {
-      .card.third { grid-column: span 4; }
-      .card.half  { grid-column: span 6; }
+    :root {
+      --bg: #08111f;
+      --bg-soft: #101b2d;
+      --card: rgba(255,255,255,0.08);
+      --card-strong: rgba(255,255,255,0.12);
+      --line: rgba(255,255,255,0.12);
+      --text: #eef4ff;
+      --muted: #b8c6df;
+      --primary: #7c9cff;
+      --primary-2: #9be4ff;
+      --success: #72d59b;
+      --shadow: 0 25px 60px rgba(0,0,0,.35);
+      --radius: 24px;
+      --radius-sm: 16px;
+      --max: 1180px;
     }
-    .card h3 { margin: 0 0 8px; font-size: 16px; }
-    code, pre, textarea, input { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-    pre { margin: 0; padding: 14px; border-radius: 12px; border: 1px solid var(--b); overflow: auto; background: var(--bg2); }
-    .section { margin-top: 44px; }
-    .section h2 { margin: 0 0 12px; font-size: 22px; }
-    .kvs { display:grid; grid-template-columns: 1fr; gap: 10px; }
-    .kv { border: 1px solid var(--b); border-radius: 12px; padding: 14px; background: var(--bg); }
-    .kv b { display:block; margin-bottom: 6px; }
-    .pricing { display:grid; grid-template-columns: 1fr; gap: 14px; }
-    @media (min-width: 900px) { .pricing { grid-template-columns: repeat(4, 1fr); } }
-    .price { font-size: 30px; font-weight: 850; margin: 6px 0 2px; }
-    .small { font-size: 12px; opacity: .82; }
-    ul { margin: 10px 0 0; padding-left: 18px; }
-    .demoWrap { display:grid; gap: 12px; grid-template-columns: 1fr; }
-    @media (min-width: 900px) { .demoWrap { grid-template-columns: 1fr 1fr; } }
-    .demoBox { border: 1px solid var(--b); border-radius: 14px; background: var(--bg); padding: 14px; }
-    .row { display:flex; flex-wrap:wrap; gap: 10px; align-items:center; }
-    input[type="file"]{ max-width: 100%; }
-    .status { font-size: 13px; opacity: .9; }
-    .ok { opacity: .95; }
-    .warn { opacity: .95; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
-    footer { margin-top: 56px; padding-top: 18px; border-top: 1px solid var(--b); display:flex; flex-wrap:wrap; gap: 10px; align-items:center; justify-content:space-between; }
-    .links a { text-decoration: none; border-bottom: 1px dotted rgba(127,127,127,.5); }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(124, 156, 255, 0.22), transparent 28%),
+        radial-gradient(circle at top right, rgba(155, 228, 255, 0.18), transparent 22%),
+        linear-gradient(180deg, #08111f 0%, #0c1526 100%);
+      min-height: 100vh;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    .container {
+      width: min(var(--max), calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(16px);
+      background: rgba(8, 17, 31, 0.7);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: .01em;
+    }
+
+    .brand-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      color: #08111f;
+      font-weight: 900;
+      box-shadow: 0 10px 30px rgba(124, 156, 255, .35);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .nav a:hover { color: var(--text); }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px 20px;
+      border-radius: 16px;
+      border: 1px solid transparent;
+      font-weight: 700;
+      transition: .2s ease;
+      cursor: pointer;
+    }
+
+    .button-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      color: #08111f;
+      box-shadow: 0 14px 34px rgba(124,156,255,.28);
+    }
+
+    .button-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 18px 42px rgba(124,156,255,.38);
+    }
+
+    .button-secondary {
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.12);
+      color: var(--text);
+    }
+
+    .button-secondary:hover {
+      background: rgba(255,255,255,.1);
+    }
+
+    .hero {
+      padding: 72px 0 48px;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 36px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow-dot {
+      width: 10px; height: 10px; border-radius: 50%; background: var(--success);
+      box-shadow: 0 0 0 6px rgba(114,213,155,.14);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(40px, 6vw, 70px);
+      line-height: .98;
+      letter-spacing: -0.04em;
+      max-width: 12ch;
+    }
+
+    .hero p {
+      margin: 20px 0 28px;
+      font-size: 19px;
+      line-height: 1.65;
+      color: var(--muted);
+      max-width: 58ch;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 26px;
+    }
+
+    .hero-points {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 16px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .hero-points span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .hero-points i {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-grid;
+      place-items: center;
+      background: rgba(114,213,155,.16);
+      color: var(--success);
+      font-style: normal;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .hero-card {
+      position: relative;
+      padding: 24px;
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.05));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .hero-card::before {
+      content: "";
+      position: absolute;
+      inset: -25% auto auto -15%;
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, rgba(124,156,255,.22), transparent 70%);
+      pointer-events: none;
+    }
+
+    .app-preview {
+      display: grid;
+      gap: 18px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .mini-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mini-pill {
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .dropzone-preview {
+      border: 1.5px dashed rgba(155,228,255,.4);
+      background: linear-gradient(180deg, rgba(155,228,255,.09), rgba(255,255,255,.04));
+      border-radius: 22px;
+      padding: 28px;
+      text-align: center;
+    }
+
+    .dropzone-preview strong {
+      display: block;
+      font-size: 20px;
+      margin-bottom: 8px;
+    }
+
+    .dropzone-preview p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .preview-table {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .preview-table table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .preview-table th,
+    .preview-table td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+
+    .preview-table th {
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .preview-table tr:last-child td { border-bottom: none; }
+    .preview-table tfoot td {
+      font-weight: 800;
+      color: var(--text);
+      background: rgba(255,255,255,.04);
+    }
+
+    section {
+      padding: 36px 0;
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: clamp(30px, 4vw, 46px);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+
+    .section-lead {
+      margin: 0;
+      max-width: 66ch;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.7;
+    }
+
+    .problem-grid,
+    .steps,
+    .feature-grid,
+    .pricing-grid,
+    .faq-grid {
+      display: grid;
+      gap: 18px;
+      margin-top: 28px;
+    }
+
+    .problem-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .steps {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .feature-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .pricing-grid {
+      grid-template-columns: repeat(4, 1fr);
+      align-items: stretch;
+    }
+
+    .faq-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .card {
+      padding: 24px;
+      border-radius: var(--radius);
+      background: var(--card);
+      border: 1px solid var(--line);
+      box-shadow: 0 18px 40px rgba(0,0,0,.16);
+    }
+
+    .card strong,
+    .step-number,
+    .price {
+      display: block;
+    }
+
+    .problem-icon,
+    .feature-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 16px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.08);
+      font-size: 20px;
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .step-number {
+      width: 52px;
+      height: 52px;
+      border-radius: 18px;
+      margin-bottom: 16px;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      font-size: 18px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      color: #08111f;
+      box-shadow: 0 12px 28px rgba(124,156,255,.28);
+    }
+
+    .feature-list {
+      list-style: none;
+      padding: 0;
+      margin: 16px 0 0;
+      display: grid;
+      gap: 12px;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 15px;
+    }
+
+    .feature-list li::before {
+      content: "✓";
+      color: var(--success);
+      font-weight: 800;
+      margin-top: 1px;
+    }
+
+    .pricing-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 24px;
+      border-radius: var(--radius);
+      background: var(--card);
+      border: 1px solid var(--line);
+      min-height: 100%;
+    }
+
+    .pricing-card.popular {
+      background: linear-gradient(180deg, rgba(124,156,255,.14), rgba(255,255,255,.06));
+      border-color: rgba(155,228,255,.35);
+      box-shadow: 0 25px 60px rgba(124,156,255,.16);
+    }
+
+    .badge {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(114,213,155,.16);
+      color: #bff4d2;
+      border: 1px solid rgba(114,213,155,.24);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .plan-name {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .price {
+      font-size: 42px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+
+    .price small {
+      font-size: 15px;
+      color: var(--muted);
+      font-weight: 600;
+      margin-left: 6px;
+    }
+
+    .plan-note {
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 15px;
+      min-height: 50px;
+    }
+
+    .cta {
+      padding: 40px 0 80px;
+    }
+
+    .cta-card {
+      padding: 34px;
+      border-radius: 32px;
+      background: linear-gradient(135deg, rgba(124,156,255,.16), rgba(155,228,255,.12));
+      border: 1px solid rgba(155,228,255,.18);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .cta-copy h2 {
+      margin: 0 0 10px;
+      font-size: clamp(28px, 3.5vw, 42px);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+    }
+
+    .cta-copy p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 56ch;
+    }
+
+    footer {
+      border-top: 1px solid rgba(255,255,255,.06);
+      padding: 20px 0 36px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 1080px) {
+      .hero-grid,
+      .problem-grid,
+      .pricing-grid,
+      .faq-grid,
+      .steps,
+      .feature-grid,
+      .cta-card {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .hero-grid,
+      .cta-card {
+        display: grid;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .nav a:not(.button) { display: none; }
+      .hero { padding-top: 40px; }
+      .hero-grid,
+      .problem-grid,
+      .pricing-grid,
+      .faq-grid,
+      .steps,
+      .feature-grid,
+      .cta-card {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar-inner { padding: 14px 0; }
+      h1 { max-width: none; }
+      .hero p { font-size: 17px; }
+      .cta-card { padding: 26px; }
+      .card, .pricing-card { padding: 20px; }
+    }
   </style>
 </head>
-
 <body>
-  <div class="wrap">
-
-    <div class="top">
-      <div class="badge">
-        <span class="pill">GL Api</span>
-        <span class="muted">Invoice PDF → JSON for automation agencies</span>
-      </div>
-
-      <div class="row">
-        <a class="btn small" href="#demo">Live Demo</a>
-        <a class="btn small" href="#blueprint">Make Blueprint</a>
-        <a class="btn small" href="#pricing">Pricing</a>
-      </div>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="#top">
+        <span class="brand-mark">GL</span>
+        <span>GL Api</span>
+      </a>
+      <nav class="nav">
+        <a href="#how">So funktioniert’s</a>
+        <a href="#features">Vorteile</a>
+        <a href="#pricing">Preise</a>
+        <a class="button button-primary" href="./app.html">Kostenlos testen</a>
+      </nav>
     </div>
+  </header>
 
-    <header class="hero">
-      <h1>Turn messy invoice PDFs into structured JSON — ready for Make &amp; Zapier.</h1>
-
-      <p class="lead">
-        Upload an invoice PDF and get clean, structured JSON in seconds — with <b>confidence</b> and <b>warnings</b> so your workflows don't break.
-        No regex. No brittle PDF parsers. Built for automation agencies handling client workflows.
-      </p>
-
-      <div class="cta">
-        <a class="btn primary" href="#demo">Try the Live Demo</a>
-        <a class="btn" href="#blueprint">Download Make Blueprint</a>
-        <a class="btn" href="#get-key">Get an API Key</a>
-        <a class="btn" id="apiDocsLink" href="https://ai-extract-api.onrender.com/docs" target="_blank" rel="noreferrer">API Docs</a>
-      </div>
-          <p class="muted small" style="margin-top:8px;">
-  No signup required • Try instantly
-</p>
-
-      <div class="grid">
-        <div class="card third">
-          <h3>Schema-safe JSON</h3>
-          <div class="muted">Your keys + nesting are enforced. Missing fields become <code>null</code>.</div>
-        </div>
-        <div class="card third">
-          <h3>Confidence + warnings</h3>
-          <div class="muted">Decide in Make/Zapier whether to auto-approve or flag uncertain extractions.</div>
-        </div>
-        <div class="card third">
-          <h3>Built for agencies</h3>
-          <div class="muted">API keys + usage limits + <code>/me/usage</code> for multi-client workflows.</div>
-        </div>
-      </div>
-    </header>
-
-    <!-- LIVE DEMO -->
-    <section class="section" id="demo">
-      <h2>Live invoice demo</h2>
-      <p class="muted" style="margin-top:-6px; max-width:80ch">
-        Upload an invoice PDF and see the extracted JSON instantly.
-      </p>
-
-      <div class="demoWrap">
-        <div class="demoBox">
-          <h3 style="margin:0 0 10px;">1) Upload invoice PDF</h3>
-          <div class="row" style="margin-bottom:10px;">
-            <input id="pdfFile" type="file" accept="application/pdf" />
-            <button class="btn small" id="runDemoBtn" type="button">Run Demo</button>
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <div class="eyebrow">
+            <span class="eyebrow-dot"></span>
+            Für Freelancer, Selbstständige und kleine Unternehmen
           </div>
-          <div class="status muted" id="demoStatus">
-            Tip: If you don’t have a PDF, use a public “sample invoice pdf” from Google and try it here.
-          </div>
-
-          <div class="kv" style="margin-top:12px;">
-            <b>Invoice JSON schema (MVP)</b>
-            <div class="muted">This is the fixed output shape used in the demo.</div>
-            <pre style="margin-top:10px;"><code id="schemaBlock">{
-  "supplier_name": null,
-  "invoice_number": null,
-  "invoice_date": null,
-  "due_date": null,
-  "currency": null,
-  "total_amount": null,
-  "vat_amount": null
-}</code></pre>
-          </div>
-        </div>
-
-        <div class="demoBox">
-          <h3 style="margin:0 0 10px;">2) Result</h3>
-          <pre><code id="demoResult">{
-  "data": {
-    "supplier_name": null,
-    "invoice_number": null,
-    "invoice_date": null,
-    "due_date": null,
-    "currency": null,
-    "total_amount": null,
-    "vat_amount": null
-  },
-  "warnings": [],
-  "confidence": 0.0,
-  "model": "gpt-4.1-mini"
-}</code></pre>
-
-          <div class="row" style="margin-top:10px;">
-            <span class="pill">Confidence: <span id="confVal">—</span></span>
-            <span class="pill">Warnings: <span id="warnVal">—</span></span>
-          </div>
-
-          <p class="muted small" style="margin-top:12px;">
-            If confidence is low or warnings are present, route to manual review in Make/Zapier.
+          <h1>Nie wieder Rechnungen manuell abtippen.</h1>
+          <p>
+            Lade deine Rechnungen als PDF hoch und erhalte automatisch eine saubere Übersicht mit
+            Lieferant, Datum, Betrag und MwSt. Statt Chaos in Ordnern hast du in Sekunden eine klare Tabelle.
           </p>
-          <p class="muted small" style="margin-top:8px;">
-  Use this output in Make, Zapier, Google Sheets, Airtable or your ERP.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- BLUEPRINT -->
-    <section class="section" id="blueprint">
-      <h2>Make Blueprint (no official app needed)</h2>
-      <div class="kvs">
-        <div class="kv">
-          <b>Download &amp; import in Make</b>
-          <div class="muted">
-            Import a ready-to-run scenario and plug in your API key.
-            You’ll have invoice extraction integrated in minutes. No coding required.
+          <div class="hero-actions">
+            <a class="button button-primary" href="./app.html">Jetzt kostenlos testen</a>
+            <a class="button button-secondary" href="#pricing">Preise ansehen</a>
           </div>
-          <div class="cta" style="margin-top:12px;">
-            <!-- Put your blueprint file into your GitHub Pages repo, e.g. /assets/glapi-invoice-blueprint.json -->
-            <a class="btn primary" href="assets/glapi-invoice-blueprint.json" download>Download Make Blueprint</a>
-            <a class="btn" href="#get-key">Get API Key</a>
-          </div>
-          <p class="muted small" style="margin-top:8px;">
-            Blueprint file path: <code>/assets/glapi-invoice-blueprint.json</code> (add it to your repo).
-          </p>
-        </div>
-      </div>
-    </section>
-
-    <!-- WHY -->
-    <section class="section">
-      <h2>Built for automation agencies</h2>
-      <div class="kvs">
-        <div class="kv">
-          <b>Stop fragile PDF parsing.</b>
-          <div class="muted">
-            Traditional parsers break when invoice layouts change. GL Api extracts into a fixed schema and returns reliability signals.
+          <div class="hero-points">
+            <span><i>✓</i>Kein Setup</span>
+            <span><i>✓</i>Keine Technik nötig</span>
+            <span><i>✓</i>Einfach PDF hochladen</span>
           </div>
         </div>
-        <div class="kv">
-          <b>Reliability signals included.</b>
-          <div class="muted">
-            Use confidence + warnings to decide: auto-approve, request clarification, or send to manual review.
-          </div>
-        </div>
-        <div class="kv">
-          <b>Agency-friendly usage control.</b>
-          <div class="muted">
-            API keys and per-key limits keep your client automations stable and predictable.
-          </div>
-        </div>
-      </div>
-    </section>
 
-    <!-- EXAMPLE -->
-    <section class="section">
-      <h2>Example (API)</h2>
-      <div class="grid">
-        <div class="card half">
-          <h3>Request</h3>
-          <pre><code>curl -X POST https://ai-extract-api.onrender.com/extract/invoice \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Invoice No. 2026-001 from ACME GmbH dated 2026-02-01. Total: 249.90 EUR. Due: 2026-02-15.",
-    "language": "en"
-  }'
-</code></pre>
-        </div>
+        <div class="hero-card">
+          <div class="app-preview">
+            <div class="mini-top">
+              <div class="brand">
+                <span class="brand-mark" style="width:34px;height:34px;border-radius:10px;">GL</span>
+                <span>Invoice Overview</span>
+              </div>
+              <div class="mini-pill">Free Plan · 2 / 5 Invoices</div>
+            </div>
 
-        <div class="card half">
-          <h3>Response</h3>
-          <pre><code>{
-  "data": {
-    "supplier_name": "ACME GmbH",
-    "invoice_number": "2026-001",
-    "invoice_date": "2026-02-01",
-    "due_date": "2026-02-15",
-    "currency": "EUR",
-    "total_amount": 249.9,
-    "vat_amount": 39.9
-  },
-  "warnings": [],
-  "confidence": 0.93,
-  "model": "gpt-4.1-mini"
-}</code></pre>
-        </div>
-      </div>
+            <div class="dropzone-preview">
+              <strong>Rechnung hochladen</strong>
+              <p>PDF per Drag & Drop hineinziehen oder einfach anklicken und auswählen.</p>
+            </div>
 
-      <div class="kvs" style="margin-top:14px;">
-        <div class="kv">
-          <b>Why not call OpenAI directly?</b>
-          <div class="muted">
-            Because automations need reliability: schema enforcement, predictable structure, confidence/warnings, API keys, limits, and usage reporting.
-            GL Api ships the infrastructure so you can ship workflows faster.
+            <div class="preview-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Lieferant</th>
+                    <th>Datum</th>
+                    <th>Gesamt</th>
+                    <th>MwSt.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Adobe</td>
+                    <td>11.03.2026</td>
+                    <td>59,49 €</td>
+                    <td>9,49 €</td>
+                  </tr>
+                  <tr>
+                    <td>Hetzner</td>
+                    <td>09.03.2026</td>
+                    <td>24,90 €</td>
+                    <td>3,97 €</td>
+                  </tr>
+                  <tr>
+                    <td>Deutsche Telekom</td>
+                    <td>04.03.2026</td>
+                    <td>69,95 €</td>
+                    <td>11,17 €</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="2">Gesamt</td>
+                    <td>154,34 €</td>
+                    <td>24,63 €</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- PRICING -->
-    <section class="section" id="pricing">
-      <h2>Pricing</h2>
-      <p class="muted" style="margin-top:-6px;">
-        Limits are currently enforced <b>per day</b> (matching the current backend implementation).
-      </p>
-
-      <div class="pricing">
-        <div class="card">
-          <h3>Free</h3>
-          <div class="price">€0</div>
-          <div class="muted">50 requests/day • best for testing</div>
-          <ul class="muted">
-            <li>Schema-safe JSON</li>
-            <li>Confidence + warnings</li>
-            <li>Usage endpoint</li>
-          </ul>
-        </div>
-
-        <div class="card">
-          <h3>Pro</h3>
-          <div class="price">€29<span class="small">/mo</span></div>
-          <div class="muted">200 requests/day • production</div>
-          <ul class="muted">
-            <li>Higher daily limits</li>
-            <li>Priority support</li>
-            <li>Custom schema guidance</li>
-          </ul>
-        </div>
-
-        <div class="card">
-          <h3>Business</h3>
-          <div class="price">€79<span class="small">/mo</span></div>
-          <div class="muted">2,000 requests/day • teams</div>
-          <ul class="muted">
-            <li>High daily limits</li>
-            <li>Dedicated support</li>
-            <li>Early access to new features</li>
-          </ul>
-        </div>
-
-        <div class="card">
-          <h3>Scale</h3>
-          <div class="price">Custom</div>
-          <div class="muted">High volume • SLA • custom limits</div>
-          <ul class="muted">
-            <li>Custom limits</li>
-            <li>SLA &amp; onboarding</li>
-            <li>Security review support</li>
-          </ul>
-        </div>
-      </div>
-
-      <p class="muted small" style="margin-top:10px;">
-        Payments can be manual at first. Stripe automation can be added once demand is steady.
-      </p>
-    </section>
-
-    <!-- GET KEY -->
-    <section class="section" id="get-key">
-      <h2>Get an API key</h2>
-      <div class="kvs">
-        <div class="kv">
-          <b>Step 1 — Request access</b>
-          <div class="muted">
-            Email: <a href="mailto:dustinglimmann4@gmail.com">dustinglimmann4@gmail.com</a><br />
-            Subject: <code>GL Api key</code><br />
-            Include: use case + expected daily volume + Make/Zapier link (optional).
-          </div>
-        </div>
-        <div class="kv">
-          <b>Step 2 — Receive your key</b>
-          <div class="muted">
-            You’ll receive a private API key with your plan and usage limit.
-          </div>
-        </div>
-        <div class="kv">
-          <b>Step 3 — Start extracting</b>
-          <div class="muted">
-            Use <code>Authorization: Bearer YOUR_API_KEY</code> with <code>/extract/invoice</code> for invoice extraction and <code>/me/usage</code> for usage tracking.
-          </div>
+    <section>
+      <div class="container">
+        <h2 class="section-title">Rechnungen sind selten das Problem. Das Chaos drumherum schon.</h2>
+        <p class="section-lead">
+          Rechnungen kommen per Mail, als Download, als Scan oder liegen irgendwo im Ordner. Spätestens wenn du
+          den Überblick brauchst, beginnt das nervige Zusammensuchen und Abtippen. Genau das nimmt dir das Tool ab.
+        </p>
+        <div class="problem-grid">
+          <article class="card">
+            <div class="problem-icon">📥</div>
+            <h3>Alles liegt verteilt</h3>
+            <p>Ein Teil im Postfach, ein Teil im Download-Ordner, ein Teil als Screenshot oder Scan.</p>
+          </article>
+          <article class="card">
+            <div class="problem-icon">⌨️</div>
+            <h3>Manuelles Eintragen kostet Zeit</h3>
+            <p>Lieferant, Datum, Gesamtbetrag und MwSt. immer wieder von Hand eintragen ist unnötig zäh.</p>
+          </article>
+          <article class="card">
+            <div class="problem-icon">😵</div>
+            <h3>Der Überblick fehlt</h3>
+            <p>Am Ende weißt du nicht mehr, was schon drin ist, was fehlt und wie viel du insgesamt ausgegeben hast.</p>
+          </article>
         </div>
       </div>
     </section>
 
-    <!-- STATUS -->
-    <section class="section">
-      <h2>Status</h2>
-      <div class="kvs">
-        <div class="kv">
-          <b>API Health</b>
-          <div class="muted">Render: <a id="healthLink" href="https://ai-extract-api.onrender.com/health" target="_blank" rel="noreferrer"><code>GET /health</code></a></div>
-        </div>
-        <div class="kv">
-          <b>Docs</b>
-          <div class="muted">Render Swagger: <a id="swaggerLink" href="https://ai-extract-api.onrender.com/docs" target="_blank" rel="noreferrer">/docs</a></div>
+    <section id="how">
+      <div class="container">
+        <h2 class="section-title">So einfach soll es sein.</h2>
+        <p class="section-lead">
+          Keine Einarbeitung, keine komplizierten Einstellungen, kein Technik-Kram. Einfach hochladen und direkt eine Übersicht bekommen.
+        </p>
+        <div class="steps">
+          <article class="card">
+            <span class="step-number">1</span>
+            <h3>Rechnung hochladen</h3>
+            <p>Du lädst eine PDF-Datei hoch. Das funktioniert direkt im Browser, ohne Installation.</p>
+          </article>
+          <article class="card">
+            <span class="step-number">2</span>
+            <h3>Daten werden erkannt</h3>
+            <p>Lieferant, Rechnungsdatum, Gesamtbetrag und MwSt. werden automatisch ausgelesen.</p>
+          </article>
+          <article class="card">
+            <span class="step-number">3</span>
+            <h3>Alles landet in deiner Tabelle</h3>
+            <p>Jede neue Rechnung ergänzt deine Übersicht. Summen werden automatisch mitgerechnet.</p>
+          </article>
         </div>
       </div>
     </section>
 
-    <footer>
-      <div class="muted small">© <span id="y"></span> GL Api • glapi.dev</div>
-      <div class="muted small links">
-        <a href="https://ai-extract-api.onrender.com/docs" target="_blank" rel="noreferrer">API Docs</a>
-        &nbsp;•&nbsp;
-        <a href="https://ai-extract-api.onrender.com/health" target="_blank" rel="noreferrer">API Health</a>
-        &nbsp;•&nbsp;
-        <a href="/impressum.html">Imprint</a>
-        &nbsp;•&nbsp;
-        <a href="/privacy.html">Privacy</a>
+    <section id="features">
+      <div class="container">
+        <h2 class="section-title">Gebaut für Menschen, nicht für Entwickler.</h2>
+        <p class="section-lead">
+          Du musst nichts über APIs, JSON oder Integrationen wissen. Das Produkt ist so aufgebaut, dass du direkt den Nutzen siehst.
+        </p>
+        <div class="feature-grid">
+          <article class="card">
+            <div class="feature-icon">🧾</div>
+            <h3>Die wichtigen Infos sofort im Blick</h3>
+            <p>Die Übersicht konzentriert sich bewusst auf das, was im Alltag am wichtigsten ist.</p>
+            <ul class="feature-list">
+              <li>Lieferant automatisch erkannt</li>
+              <li>Rechnungsdatum direkt sichtbar</li>
+              <li>Gesamtbetrag pro Rechnung</li>
+              <li>MwSt. sauber getrennt dargestellt</li>
+            </ul>
+          </article>
+          <article class="card">
+            <div class="feature-icon">📊</div>
+            <h3>Wachsende Tabelle statt wilder Zettelwirtschaft</h3>
+            <p>Mit jeder hochgeladenen Rechnung wird deine Übersicht besser und vollständiger.</p>
+            <ul class="feature-list">
+              <li>Tabelle erweitert sich automatisch</li>
+              <li>Gesamtsumme wird mitgerechnet</li>
+              <li>Auch für kleine Teams und Solo-Selbstständige praktisch</li>
+              <li>Ideal zum schnellen Sortieren und Prüfen</li>
+            </ul>
+          </article>
+        </div>
       </div>
-    </footer>
-  </div>
+    </section>
 
-  <script>
-    document.getElementById("y").textContent = new Date().getFullYear();
+    <section id="pricing">
+      <div class="container">
+        <h2 class="section-title">Einfache Preise, ohne Technik-Sprache.</h2>
+        <p class="section-lead">
+          Du bezahlst nicht für abstrakte Requests, sondern für das, was du wirklich nutzt: Rechnungen.
+        </p>
+        <div class="pricing-grid">
+          <article class="pricing-card">
+            <span class="plan-name">Free</span>
+            <span class="price">0€ <small>/ Monat</small></span>
+            <div class="plan-note">Zum Ausprobieren und für den ersten Eindruck.</div>
+            <ul class="feature-list">
+              <li>5 Rechnungen</li>
+              <li>Upload direkt im Browser</li>
+              <li>Übersicht mit Summen</li>
+            </ul>
+            <a class="button button-secondary" href="./app.html">Kostenlos testen</a>
+          </article>
 
-    // Configure your API base (Render)
-    const API_BASE = "https://ai-extract-api.onrender.com";
-    const demoBtn = document.getElementById("runDemoBtn");
-    const demoStatus = document.getElementById("demoStatus");
-    const demoResult = document.getElementById("demoResult");
-    const confVal = document.getElementById("confVal");
-    const warnVal = document.getElementById("warnVal");
+          <article class="pricing-card popular">
+            <span class="badge">Beliebt</span>
+            <span class="plan-name">Starter</span>
+            <span class="price">19€ <small>/ Monat</small></span>
+            <div class="plan-note">Für Freelancer und kleine Unternehmen mit regelmäßigem Bedarf.</div>
+            <ul class="feature-list">
+              <li>100 Rechnungen</li>
+              <li>Schneller Überblick</li>
+              <li>Perfekt für den Alltag</li>
+            </ul>
+            <a class="button button-primary" href="./app.html">Mit Demo starten</a>
+          </article>
 
-    const schema = {
-      supplier_name: null,
-      invoice_number: null,
-      invoice_date: null,
-      due_date: null,
-      currency: null,
-      total_amount: null,
-      vat_amount: null
-    };
+          <article class="pricing-card">
+            <span class="plan-name">Business</span>
+            <span class="price">49€ <small>/ Monat</small></span>
+            <div class="plan-note">Für mehr Volumen und Teams, die Ordnung in ihre Rechnungen bringen wollen.</div>
+            <ul class="feature-list">
+              <li>500 Rechnungen</li>
+              <li>Mehr Spielraum</li>
+              <li>Für laufende Prozesse</li>
+            </ul>
+            <a class="button button-secondary" href="./app.html">Demo ansehen</a>
+          </article>
 
-    async function runPdfDemo(file) {
-      // Public live demo endpoint for invoice PDF uploads
-      const fd = new FormData();
-      fd.append("file", file);
+          <article class="pricing-card">
+            <span class="plan-name">Pro</span>
+            <span class="price">99€ <small>/ Monat</small></span>
+            <div class="plan-note">Für hohe Mengen und klare Übersicht ohne manuelle Listenpflege.</div>
+            <ul class="feature-list">
+              <li>1500 Rechnungen</li>
+              <li>Für größere Workloads</li>
+              <li>Maximale Einfachheit</li>
+            </ul>
+            <a class="button button-secondary" href="./app.html">Jetzt testen</a>
+          </article>
+        </div>
+      </div>
+    </section>
 
-      const res = await fetch(`${API_BASE}/demo/invoice`, {
-        method: "POST",
-        body: fd
-      });
+    <section>
+      <div class="container">
+        <h2 class="section-title">Häufige Fragen</h2>
+        <div class="faq-grid">
+          <article class="card">
+            <h3>Brauche ich technisches Wissen?</h3>
+            <p>Nein. Das Tool ist bewusst so gebaut, dass du einfach eine Rechnung hochlädst und direkt eine Übersicht bekommst.</p>
+          </article>
+          <article class="card">
+            <h3>Was sehe ich nach dem Upload?</h3>
+            <p>Du bekommst die wichtigsten Rechnungsdaten in einer Tabelle: Lieferant, Datum, Gesamtbetrag und MwSt.</p>
+          </article>
+          <article class="card">
+            <h3>Muss ich etwas installieren?</h3>
+            <p>Nein. Alles läuft direkt im Browser. Du öffnest die App und lädst deine PDF-Datei hoch.</p>
+          </article>
+          <article class="card">
+            <h3>Ist das schon ein fertiges Produkt?</h3>
+            <p>Gerade ist es ein klares MVP: bewusst einfach, schnell testbar und darauf optimiert, ob es echten Nutzen bringt.</p>
+          </article>
+        </div>
+      </div>
+    </section>
 
-      if (!res.ok) {
-        const t = await res.text().catch(() => "");
-        throw new Error(`Demo request failed (${res.status}). ${t}`.trim());
-      }
-      return await res.json();
-    }
+    <section class="cta">
+      <div class="container">
+        <div class="cta-card">
+          <div class="cta-copy">
+            <h2>Probier es jetzt mit einer echten Rechnung aus.</h2>
+            <p>
+              Öffne die App, lade eine PDF hoch und schau dir direkt an, wie deine Übersicht entsteht.
+              Genau so muss sich das Produkt später für echte Nutzer anfühlen: einfach, schnell und klar.
+            </p>
+          </div>
+          <a class="button button-primary" href="./app.html">Zur App</a>
+        </div>
+      </div>
+    </section>
+  </main>
 
-    demoBtn.addEventListener("click", async () => {
-      const f = document.getElementById("pdfFile").files[0];
-      if (!f) {
-        demoStatus.textContent = "Please choose a PDF first.";
-        return;
-      }
-      if (f.size > 2 * 1024 * 1024) {
-        demoStatus.textContent = "File too large for demo (max 2MB).";
-        return;
-      }
-
-      demoStatus.textContent = "Running demo…";
-      demoBtn.disabled = true;
-
-      try {
-        const payload = await runPdfDemo(f);
-        demoResult.textContent = JSON.stringify(payload, null, 2);
-
-        const c = (payload && typeof payload.confidence === "number") ? payload.confidence : null;
-        const w = (payload && Array.isArray(payload.warnings)) ? payload.warnings : [];
-        confVal.textContent = (c === null) ? "—" : c.toFixed(2);
-        warnVal.textContent = w.length ? String(w.length) : "0";
-        demoStatus.textContent = "Done.";
-      } catch (err) {
-        demoStatus.textContent =
-          "Demo request failed. Please try another PDF or try again in a moment. ";
-        // Show schema placeholder so UI still feels complete
-        demoResult.textContent = JSON.stringify({
-          data: schema,
-          warnings: ["demo_request_failed"],
-          confidence: 0.0,
-          model: "gpt-4.1-mini"
-        }, null, 2);
-        confVal.textContent = "0.00";
-        warnVal.textContent = "1";
-        console.error(err);
-      } finally {
-        demoBtn.disabled = false;
-      }
-    });
-  </script>
+  <footer>
+    <div class="container footer-row">
+      <div>GL Api · Rechnung hochladen statt abtippen</div>
+      <div>Demo MVP · Einfacher Invoice Workflow</div>
+    </div>
+  </footer>
 </body>
 </html>

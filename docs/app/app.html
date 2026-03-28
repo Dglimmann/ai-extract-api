@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GL Api App – Rechnungen hochladen</title>
+  <meta name="description" content="Rechnung hochladen und automatisch Lieferant, Datum, Betrag und MwSt. in einer Tabelle anzeigen lassen." />
+  <style>
+    :root {
+      --bg: #0a1324;
+      --bg-soft: #111c31;
+      --panel: rgba(255,255,255,0.08);
+      --panel-strong: rgba(255,255,255,0.12);
+      --line: rgba(255,255,255,0.1);
+      --text: #eef4ff;
+      --muted: #afbdd8;
+      --primary: #85a3ff;
+      --primary-2: #9be4ff;
+      --success: #78d7a0;
+      --danger: #ff8f8f;
+      --warning: #ffd37c;
+      --radius: 24px;
+      --shadow: 0 22px 60px rgba(0, 0, 0, .35);
+      --max: 1280px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(133,163,255,.2), transparent 24%),
+        radial-gradient(circle at top right, rgba(155,228,255,.18), transparent 20%),
+        linear-gradient(180deg, #0a1324 0%, #0d172a 100%);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, input, select { font: inherit; }
+
+    .container {
+      width: min(var(--max), calc(100% - 28px));
+      margin: 0 auto;
+    }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(18px);
+      background: rgba(10,19,36,.72);
+      border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+
+    .topbar-inner {
+      padding: 16px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: .01em;
+    }
+
+    .brand-mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      color: #09111e;
+      font-weight: 900;
+      box-shadow: 0 12px 30px rgba(133,163,255,.32);
+    }
+
+    .topbar-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .pill {
+      padding: 10px 14px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--muted);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 13px 18px;
+      border-radius: 16px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      font-weight: 700;
+      transition: .2s ease;
+      text-decoration: none;
+    }
+
+    .button:hover { transform: translateY(-1px); }
+
+    .button-primary {
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      color: #08111f;
+      box-shadow: 0 16px 34px rgba(133,163,255,.28);
+    }
+
+    .button-secondary {
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      border-color: rgba(255,255,255,.1);
+    }
+
+    .page {
+      padding: 34px 0 60px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 22px;
+      margin-bottom: 22px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero-copy {
+      padding: 30px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+
+    .eyebrow-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 6px rgba(120,215,160,.14);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(32px, 4vw, 54px);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+      max-width: 12ch;
+    }
+
+    .hero-copy p {
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.7;
+      max-width: 58ch;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-top: 24px;
+    }
+
+    .stat-card {
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .stat-label {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .upload-panel {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .dropzone {
+      position: relative;
+      min-height: 280px;
+      padding: 28px;
+      border-radius: 24px;
+      border: 1.6px dashed rgba(155,228,255,.35);
+      background: linear-gradient(180deg, rgba(155,228,255,.1), rgba(255,255,255,.04));
+      display: grid;
+      place-items: center;
+      text-align: center;
+      transition: .2s ease;
+      overflow: hidden;
+    }
+
+    .dropzone.dragover {
+      transform: scale(1.01);
+      border-color: rgba(155,228,255,.8);
+      background: linear-gradient(180deg, rgba(155,228,255,.16), rgba(255,255,255,.05));
+    }
+
+    .dropzone input {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .dropzone-content {
+      pointer-events: none;
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 14px;
+      justify-items: center;
+    }
+
+    .dropzone-icon {
+      width: 76px;
+      height: 76px;
+      border-radius: 24px;
+      display: grid;
+      place-items: center;
+      font-size: 32px;
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.12);
+      box-shadow: 0 16px 34px rgba(0,0,0,.18);
+    }
+
+    .dropzone strong {
+      display: block;
+      font-size: 28px;
+      letter-spacing: -0.03em;
+    }
+
+    .dropzone p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 42ch;
+      font-size: 15px;
+    }
+
+    .upload-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .status {
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--muted);
+      font-size: 14px;
+      min-height: 50px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .status.loading::before,
+    .status.success::before,
+    .status.error::before {
+      content: "";
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+    }
+
+    .status.loading::before {
+      border: 2px solid rgba(255,255,255,.22);
+      border-top-color: var(--primary-2);
+      animation: spin .8s linear infinite;
+    }
+
+    .status.success::before { background: var(--success); }
+    .status.error::before { background: var(--danger); }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap: 22px;
+      align-items: start;
+    }
+
+    .table-panel,
+    .side-panel {
+      padding: 22px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .panel-header h2,
+    .side-panel h2,
+    .notice h3 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+    }
+
+    .panel-header p,
+    .side-panel p,
+    .notice p,
+    .warning-list li,
+    .detail-list dt,
+    .detail-list dd {
+      color: var(--muted);
+    }
+
+    .panel-header p,
+    .side-panel p,
+    .notice p {
+      margin: 6px 0 0;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border-radius: 20px;
+      border: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.04);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+    }
+
+    th, td {
+      padding: 15px 16px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+
+    tbody tr:hover td { background: rgba(255,255,255,.03); }
+    tbody tr:last-child td { border-bottom: 1px solid rgba(255,255,255,.08); }
+
+    tfoot td {
+      font-weight: 900;
+      background: rgba(255,255,255,.05);
+    }
+
+    .empty-state {
+      padding: 36px 24px;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .side-stack {
+      display: grid;
+      gap: 22px;
+    }
+
+    .metric-grid {
+      display: grid;
+      gap: 14px;
+      grid-template-columns: repeat(2, 1fr);
+      margin-top: 18px;
+    }
+
+    .metric {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .metric-label {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .metric-value {
+      font-weight: 900;
+      font-size: 24px;
+      letter-spacing: -0.03em;
+    }
+
+    .notice {
+      padding: 22px;
+      border-radius: 24px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    .warning-list {
+      list-style: none;
+      padding: 0;
+      margin: 14px 0 0;
+      display: grid;
+      gap: 10px;
+    }
+
+    .warning-list li {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255,211,124,.08);
+      border: 1px solid rgba(255,211,124,.14);
+      color: #ffe4a8;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+
+    .detail-list {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px 16px;
+      margin: 0;
+    }
+
+    .detail-list dt {
+      font-size: 14px;
+    }
+
+    .detail-list dd {
+      margin: 0;
+      font-weight: 700;
+      color: var(--text);
+      text-align: right;
+    }
+
+    .footer-note {
+      margin-top: 24px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1080px) {
+      .hero,
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .topbar-inner,
+      .upload-meta,
+      .status-row,
+      .panel-header {
+        align-items: stretch;
+      }
+
+      .topbar-inner,
+      .status-row {
+        flex-direction: column;
+      }
+
+      .stats,
+      .metric-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-copy,
+      .upload-panel,
+      .table-panel,
+      .side-panel,
+      .notice {
+        padding: 18px;
+      }
+
+      h1 { max-width: none; }
+      .dropzone strong { font-size: 24px; }
+      .button { width: 100%; }
+      .topbar-actions { width: 100%; }
+      .topbar-actions .pill, .topbar-actions .button { width: 100%; justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="container topbar-inner">
+      <a class="brand" href="./index.html">
+        <span class="brand-mark">GL</span>
+        <span>GL Api</span>
+      </a>
+      <div class="topbar-actions">
+        <div class="pill" id="usagePill">Free Plan · 0 / 5 Invoices</div>
+        <a class="button button-secondary" href="./index.html">Zur Landingpage</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <div class="container">
+      <section class="hero">
+        <div class="panel hero-copy">
+          <div class="eyebrow">
+            <span class="eyebrow-dot"></span>
+            Einfach PDF hochladen und direkt Überblick bekommen
+          </div>
+          <h1>Deine Rechnungsübersicht in Sekunden.</h1>
+          <p>
+            Diese Demo zeigt, wie aus einer PDF-Datei automatisch eine verständliche Tabelle wird.
+            Ohne Copy-Paste. Ohne Technik. Einfach Rechnung rein und die wichtigsten Infos sofort sehen.
+          </p>
+          <div class="stats">
+            <div class="stat-card">
+              <span class="stat-label">Hochgeladene Rechnungen</span>
+              <span class="stat-value" id="statInvoices">0</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Gesamtsumme</span>
+              <span class="stat-value" id="statTotal">0,00 €</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">MwSt. gesamt</span>
+              <span class="stat-value" id="statVat">0,00 €</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel upload-panel">
+          <label class="dropzone" id="dropzone">
+            <input type="file" id="fileInput" accept="application/pdf" />
+            <div class="dropzone-content">
+              <div class="dropzone-icon">📄</div>
+              <strong>Rechnung hochladen</strong>
+              <p>
+                Zieh deine PDF hier hinein oder tippe auf den Bereich, um eine Datei auszuwählen.
+                Danach wird sie automatisch verarbeitet.
+              </p>
+              <span class="tag">Nur PDF · Max. sinnvoll für Demo-Dateien</span>
+            </div>
+          </label>
+
+          <div class="upload-meta">
+            <span id="selectedFile">Noch keine Datei ausgewählt</span>
+            <span>Endpoint: /demo/invoice</span>
+          </div>
+
+          <div class="status-row">
+            <div class="status" id="statusBox">Bereit. Lade eine Rechnung hoch, um die Demo zu testen.</div>
+            <button class="button button-primary" id="uploadButton">Jetzt verarbeiten</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="main-grid">
+        <div class="panel table-panel">
+          <div class="panel-header">
+            <div>
+              <h2>Deine Rechnungen</h2>
+              <p>Jede verarbeitete Rechnung ergänzt die Tabelle automatisch.</p>
+            </div>
+            <button class="button button-secondary" id="clearButton">Tabelle leeren</button>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Dateiname</th>
+                  <th>Lieferant</th>
+                  <th>Datum</th>
+                  <th>Gesamt</th>
+                  <th>MwSt.</th>
+                  <th>Confidence</th>
+                </tr>
+              </thead>
+              <tbody id="invoiceTableBody">
+                <tr>
+                  <td colspan="7" class="empty-state">
+                    Noch keine Rechnung verarbeitet.<br />
+                    Lade oben eine PDF hoch und die Tabelle füllt sich automatisch.
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="4">Summen</td>
+                  <td id="tableTotal">0,00 €</td>
+                  <td id="tableVat">0,00 €</td>
+                  <td id="tableConfidence">–</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <div class="side-stack">
+          <aside class="panel side-panel">
+            <h2>Aktuelle Rechnung</h2>
+            <p>Nach jedem Upload siehst du hier die zuletzt erkannten Daten noch einmal kompakt.</p>
+            <div class="metric-grid">
+              <div class="metric">
+                <span class="metric-label">Lieferant</span>
+                <span class="metric-value" id="currentSupplier" style="font-size:18px;">–</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Datum</span>
+                <span class="metric-value" id="currentDate" style="font-size:18px;">–</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">Gesamt</span>
+                <span class="metric-value" id="currentTotal">0,00 €</span>
+              </div>
+              <div class="metric">
+                <span class="metric-label">MwSt.</span>
+                <span class="metric-value" id="currentVat">0,00 €</span>
+              </div>
+            </div>
+          </aside>
+
+          <aside class="panel side-panel">
+            <h2>Session-Überblick</h2>
+            <p>Eine kleine Live-Zusammenfassung deiner aktuellen Demo-Nutzung.</p>
+            <dl class="detail-list">
+              <dt>Rechnungen in Tabelle</dt>
+              <dd id="detailCount">0</dd>
+              <dt>Durchschnittliche Confidence</dt>
+              <dd id="detailAvgConfidence">0%</dd>
+              <dt>Gesamtbetrag</dt>
+              <dd id="detailGrandTotal">0,00 €</dd>
+              <dt>MwSt. gesamt</dt>
+              <dd id="detailGrandVat">0,00 €</dd>
+            </dl>
+          </aside>
+
+          <aside class="notice" id="warningsCard">
+            <h3>Hinweise & Warnings</h3>
+            <p>Falls bei der Rechnung etwas unsicher erkannt wurde, erscheint es hier.</p>
+            <ul class="warning-list" id="warningList">
+              <li>Noch keine Hinweise vorhanden. Nach einem Upload werden eventuelle Warnings hier angezeigt.</li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+
+      <div class="footer-note">
+        Demo-Endpoint: <strong>https://ai-extract-api.onrender.com/demo/invoice</strong>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const API_URL = 'https://ai-extract-api.onrender.com/demo/invoice';
+    const FREE_LIMIT = 5;
+
+    const fileInput = document.getElementById('fileInput');
+    const uploadButton = document.getElementById('uploadButton');
+    const clearButton = document.getElementById('clearButton');
+    const selectedFile = document.getElementById('selectedFile');
+    const statusBox = document.getElementById('statusBox');
+    const dropzone = document.getElementById('dropzone');
+    const invoiceTableBody = document.getElementById('invoiceTableBody');
+    const warningList = document.getElementById('warningList');
+    const usagePill = document.getElementById('usagePill');
+
+    const statInvoices = document.getElementById('statInvoices');
+    const statTotal = document.getElementById('statTotal');
+    const statVat = document.getElementById('statVat');
+    const tableTotal = document.getElementById('tableTotal');
+    const tableVat = document.getElementById('tableVat');
+    const tableConfidence = document.getElementById('tableConfidence');
+    const detailCount = document.getElementById('detailCount');
+    const detailAvgConfidence = document.getElementById('detailAvgConfidence');
+    const detailGrandTotal = document.getElementById('detailGrandTotal');
+    const detailGrandVat = document.getElementById('detailGrandVat');
+    const currentSupplier = document.getElementById('currentSupplier');
+    const currentDate = document.getElementById('currentDate');
+    const currentTotal = document.getElementById('currentTotal');
+    const currentVat = document.getElementById('currentVat');
+
+    let invoices = [];
+
+    function setStatus(message, type = '') {
+      statusBox.textContent = message;
+      statusBox.className = 'status';
+      if (type) statusBox.classList.add(type);
+    }
+
+    function formatCurrency(value) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return '–';
+      return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(num);
+    }
+
+    function formatPercent(value) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return '–';
+      return `${Math.round(num * 100)}%`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function normalizeNumber(value) {
+      if (typeof value === 'number') return value;
+      if (typeof value !== 'string') return 0;
+      const cleaned = value
+        .replace(/€/g, '')
+        .replace(/\s/g, '')
+        .replace(/\./g, '')
+        .replace(/,/g, '.');
+      const num = Number(cleaned);
+      return Number.isFinite(num) ? num : 0;
+    }
+
+    function pickField(obj, keys, fallback = '–') {
+      for (const key of keys) {
+        const value = obj?.[key];
+        if (value !== undefined && value !== null && String(value).trim() !== '') {
+          return value;
+        }
+      }
+      return fallback;
+    }
+
+    function extractInvoiceData(payload) {
+      const data = payload?.data ?? payload ?? {};
+      const warnings = Array.isArray(payload?.warnings) ? payload.warnings : [];
+      const confidence = Number(payload?.confidence ?? 0);
+
+      return {
+        supplier: pickField(data, ['supplier', 'vendor', 'supplier_name', 'company', 'issuer']),
+        date: pickField(data, ['date', 'invoice_date', 'issued_at', 'billing_date']),
+        total: normalizeNumber(pickField(data, ['total', 'total_amount', 'amount_total', 'gross_total', 'invoice_total'], 0)),
+        vat: normalizeNumber(pickField(data, ['vat', 'tax', 'vat_amount', 'tax_amount'], 0)),
+        warnings,
+        confidence,
+        raw: data,
+      };
+    }
+
+    function renderWarnings(warnings) {
+      if (!warnings.length) {
+        warningList.innerHTML = '<li>Keine Warnings für den letzten Upload. Das sieht gut aus.</li>';
+        return;
+      }
+
+      warningList.innerHTML = warnings
+        .map(item => `<li>${escapeHtml(item)}</li>`)
+        .join('');
+    }
+
+    function renderTable() {
+      if (!invoices.length) {
+        invoiceTableBody.innerHTML = `
+          <tr>
+            <td colspan="7" class="empty-state">
+              Noch keine Rechnung verarbeitet.<br />
+              Lade oben eine PDF hoch und die Tabelle füllt sich automatisch.
+            </td>
+          </tr>
+        `;
+      } else {
+        invoiceTableBody.innerHTML = invoices.map((invoice, index) => `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${escapeHtml(invoice.fileName)}</td>
+            <td>${escapeHtml(invoice.supplier)}</td>
+            <td>${escapeHtml(invoice.date)}</td>
+            <td>${formatCurrency(invoice.total)}</td>
+            <td>${formatCurrency(invoice.vat)}</td>
+            <td>${formatPercent(invoice.confidence)}</td>
+          </tr>
+        `).join('');
+      }
+
+      const total = invoices.reduce((sum, invoice) => sum + invoice.total, 0);
+      const vat = invoices.reduce((sum, invoice) => sum + invoice.vat, 0);
+      const avgConfidence = invoices.length
+        ? invoices.reduce((sum, invoice) => sum + invoice.confidence, 0) / invoices.length
+        : 0;
+
+      statInvoices.textContent = String(invoices.length);
+      statTotal.textContent = formatCurrency(total);
+      statVat.textContent = formatCurrency(vat);
+      tableTotal.textContent = formatCurrency(total);
+      tableVat.textContent = formatCurrency(vat);
+      tableConfidence.textContent = invoices.length ? formatPercent(avgConfidence) : '–';
+      detailCount.textContent = String(invoices.length);
+      detailAvgConfidence.textContent = invoices.length ? formatPercent(avgConfidence) : '0%';
+      detailGrandTotal.textContent = formatCurrency(total);
+      detailGrandVat.textContent = formatCurrency(vat);
+      usagePill.textContent = `Free Plan · ${invoices.length} / ${FREE_LIMIT} Invoices`;
+    }
+
+    function setCurrentInvoice(invoice) {
+      currentSupplier.textContent = invoice.supplier || '–';
+      currentDate.textContent = invoice.date || '–';
+      currentTotal.textContent = formatCurrency(invoice.total);
+      currentVat.textContent = formatCurrency(invoice.vat);
+    }
+
+    async function uploadInvoice() {
+      const file = fileInput.files?.[0];
+      if (!file) {
+        setStatus('Bitte wähle zuerst eine PDF-Datei aus.', 'error');
+        return;
+      }
+
+      if (invoices.length >= FREE_LIMIT) {
+        setStatus(`Free-Limit erreicht: ${FREE_LIMIT} / ${FREE_LIMIT} Rechnungen in dieser Demo-Session.`, 'error');
+        return;
+      }
+
+      setStatus('Rechnung wird verarbeitet…', 'loading');
+      uploadButton.disabled = true;
+      uploadButton.textContent = 'Wird verarbeitet…';
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          body: formData,
+        });
+
+        const rawText = await response.text();
+        let payload;
+
+        try {
+          payload = rawText ? JSON.parse(rawText) : {};
+        } catch (error) {
+          throw new Error('Die Antwort konnte nicht als JSON gelesen werden.');
+        }
+
+        if (!response.ok) {
+          const detail = payload?.detail?.error || payload?.detail || payload?.error || `HTTP ${response.status}`;
+          throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
+        }
+
+        const parsed = extractInvoiceData(payload);
+        const invoice = {
+          fileName: file.name,
+          ...parsed,
+        };
+
+        invoices.unshift(invoice);
+        renderTable();
+        renderWarnings(invoice.warnings);
+        setCurrentInvoice(invoice);
+        setStatus(`Fertig. ${file.name} wurde erfolgreich verarbeitet.`, 'success');
+        fileInput.value = '';
+        selectedFile.textContent = 'Noch keine Datei ausgewählt';
+      } catch (error) {
+        console.error(error);
+        setStatus(`Fehler: ${error.message || 'Upload fehlgeschlagen.'}`, 'error');
+      } finally {
+        uploadButton.disabled = false;
+        uploadButton.textContent = 'Jetzt verarbeiten';
+      }
+    }
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files?.[0];
+      selectedFile.textContent = file ? `Ausgewählt: ${file.name}` : 'Noch keine Datei ausgewählt';
+    });
+
+    uploadButton.addEventListener('click', uploadInvoice);
+
+    clearButton.addEventListener('click', () => {
+      invoices = [];
+      renderTable();
+      renderWarnings([]);
+      setCurrentInvoice({ supplier: '–', date: '–', total: 0, vat: 0 });
+      setStatus('Tabelle geleert. Du kannst neue Rechnungen hochladen.', 'success');
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, event => {
+        event.preventDefault();
+        dropzone.classList.add('dragover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, event => {
+        event.preventDefault();
+        dropzone.classList.remove('dragover');
+      });
+    });
+
+    dropzone.addEventListener('drop', event => {
+      const files = event.dataTransfer?.files;
+      if (files?.length) {
+        fileInput.files = files;
+        selectedFile.textContent = `Ausgewählt: ${files[0].name}`;
+      }
+    });
+
+    renderTable();
+    renderWarnings([]);
+    setCurrentInvoice({ supplier: '–', date: '–', total: 0, vat: 0 });
+  </script>
+</body>
+</html>
