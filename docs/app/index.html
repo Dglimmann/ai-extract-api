@@ -3,572 +3,214 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GL Api App – Rechnungen hochladen</title>
-  <meta name="description" content="Rechnung hochladen und automatisch Lieferant, Datum, Betrag und MwSt. in einer Tabelle anzeigen lassen." />
+  <title>InvoiceFlow App – Rechnungen sortieren statt suchen</title>
+  <meta name="description" content="Lade Rechnungen hoch, erkenne automatisch Lieferant, Datum, Betrag, MwSt. und Kostenstelle und behalte alles in einer klaren Übersicht." />
   <style>
-    :root {
-      --bg: #0a1324;
-      --bg-soft: #111c31;
-      --panel: rgba(255,255,255,0.08);
-      --panel-strong: rgba(255,255,255,0.12);
-      --line: rgba(255,255,255,0.1);
-      --text: #eef4ff;
-      --muted: #afbdd8;
-      --primary: #85a3ff;
-      --primary-2: #9be4ff;
-      --success: #78d7a0;
-      --danger: #ff8f8f;
-      --warning: #ffd37c;
-      --radius: 24px;
-      --shadow: 0 22px 60px rgba(0, 0, 0, .35);
-      --max: 1280px;
+    :root{
+      --bg:#06101d;
+      --bg2:#101d35;
+      --panel:rgba(255,255,255,.08);
+      --panel-2:rgba(255,255,255,.05);
+      --line:rgba(255,255,255,.09);
+      --text:#eff5ff;
+      --muted:#b2c1da;
+      --primary:#88a8ff;
+      --secondary:#95eeff;
+      --success:#7addaa;
+      --warning:#ffd481;
+      --danger:#ff9898;
+      --shadow:0 24px 64px rgba(0,0,0,.35);
+      --radius:28px;
+      --max:1240px;
     }
-
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--text);
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      color:var(--text);
       background:
-        radial-gradient(circle at top left, rgba(133,163,255,.2), transparent 24%),
-        radial-gradient(circle at top right, rgba(155,228,255,.18), transparent 20%),
-        linear-gradient(180deg, #0a1324 0%, #0d172a 100%);
+        radial-gradient(circle at 0% 0%, rgba(136,168,255,.2), transparent 24%),
+        radial-gradient(circle at 100% 0%, rgba(149,238,255,.14), transparent 20%),
+        linear-gradient(180deg, var(--bg), var(--bg2));
     }
-
-    a { color: inherit; text-decoration: none; }
-    button, input, select { font: inherit; }
-
-    .container {
-      width: min(var(--max), calc(100% - 28px));
-      margin: 0 auto;
+    a{text-decoration:none;color:inherit}
+    button,input,select{font:inherit}
+    .container{width:min(var(--max), calc(100% - 28px));margin:0 auto}
+    .topbar{
+      position:sticky;top:0;z-index:70;
+      backdrop-filter:blur(18px);
+      background:rgba(6,16,29,.72);
+      border-bottom:1px solid rgba(255,255,255,.06)
     }
-
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      backdrop-filter: blur(18px);
-      background: rgba(10,19,36,.72);
-      border-bottom: 1px solid rgba(255,255,255,.06);
+    .topbar-inner{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 0}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:800}
+    .brand-mark{width:42px;height:42px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,var(--primary),var(--secondary));color:#07111f;font-weight:900;box-shadow:0 14px 30px rgba(136,168,255,.35)}
+    .header-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .pill,.button,.chip{
+      display:inline-flex;align-items:center;justify-content:center;gap:10px;
+      border-radius:18px;font-weight:800
     }
-
-    .topbar-inner {
-      padding: 16px 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
+    .pill{padding:12px 16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:var(--text)}
+    .button{
+      padding:13px 18px;cursor:pointer;border:1px solid transparent;transition:.2s ease
     }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 800;
-      letter-spacing: .01em;
+    .button:hover{transform:translateY(-1px)}
+    .button-primary{background:linear-gradient(135deg,var(--primary),var(--secondary));color:#07111f;box-shadow:0 16px 34px rgba(136,168,255,.28)}
+    .button-secondary{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.09);color:var(--text)}
+    .button-ghost{background:transparent;border-color:rgba(255,255,255,.09);color:var(--muted)}
+    .page{padding:34px 0 70px}
+    .hero{
+      display:grid;grid-template-columns:.9fr 1.1fr;gap:20px;align-items:stretch;margin-bottom:20px
     }
-
-    .brand-mark {
-      width: 40px;
-      height: 40px;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, var(--primary), var(--primary-2));
-      color: #09111e;
-      font-weight: 900;
-      box-shadow: 0 12px 30px rgba(133,163,255,.32);
+    .panel{
+      background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:28px
     }
-
-    .topbar-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-      align-items: center;
+    .hero-copy,.upload-panel,.section-panel{padding:24px}
+    .eyebrow{
+      display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:999px;
+      background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:var(--muted);font-size:14px;margin-bottom:16px
     }
-
-    .pill {
-      padding: 10px 14px;
-      border-radius: 14px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.08);
-      color: var(--muted);
-      font-size: 14px;
-      white-space: nowrap;
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--success);box-shadow:0 0 0 6px rgba(122,221,170,.15)}
+    h1{margin:0;font-size:clamp(36px,5vw,58px);line-height:1;letter-spacing:-.05em;max-width:12ch}
+    .hero-copy p{margin:18px 0 0;color:var(--muted);line-height:1.7;font-size:18px}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:22px}
+    .stat-card{padding:18px;border-radius:22px;background:var(--panel-2);border:1px solid rgba(255,255,255,.08)}
+    .stat-label{display:block;color:var(--muted);font-size:13px;margin-bottom:8px}
+    .stat-value{font-size:24px;font-weight:900;letter-spacing:-.04em}
+    .dropzone{
+      position:relative;min-height:280px;border-radius:24px;border:1.6px dashed rgba(149,238,255,.32);
+      background:linear-gradient(180deg, rgba(149,238,255,.08), rgba(255,255,255,.02));
+      display:grid;place-items:center;text-align:center;padding:22px;transition:.2s ease
     }
-
-    .button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 13px 18px;
-      border-radius: 16px;
-      border: 1px solid transparent;
-      cursor: pointer;
-      font-weight: 700;
-      transition: .2s ease;
-      text-decoration: none;
+    .dropzone.dragover{transform:scale(1.01);border-color:rgba(149,238,255,.72);background:linear-gradient(180deg, rgba(149,238,255,.14), rgba(255,255,255,.04))}
+    .dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+    .dropzone-content{display:grid;gap:12px;justify-items:center}
+    .dropzone-icon{
+      width:72px;height:72px;border-radius:22px;display:grid;place-items:center;background:rgba(255,255,255,.09);font-size:32px;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)
     }
-
-    .button:hover { transform: translateY(-1px); }
-
-    .button-primary {
-      background: linear-gradient(135deg, var(--primary), var(--primary-2));
-      color: #08111f;
-      box-shadow: 0 16px 34px rgba(133,163,255,.28);
+    .dropzone strong{font-size:24px;letter-spacing:-.03em}
+    .dropzone p{margin:0;color:var(--muted);line-height:1.6;max-width:42ch}
+    .helper-row{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:14px;margin-top:14px}
+    .grid{display:grid;grid-template-columns:.88fr 1.12fr;gap:20px}
+    .stack{display:grid;gap:20px}
+    .section-panel h2{margin:0 0 8px;font-size:22px}
+    .section-panel p{margin:0;color:var(--muted);line-height:1.65}
+    .list{display:grid;gap:12px;margin-top:18px}
+    .list-item{display:flex;justify-content:space-between;gap:12px;padding:14px 16px;border-radius:18px;background:var(--panel-2);border:1px solid rgba(255,255,255,.07)}
+    .list-item strong{font-size:15px}
+    .list-item span{color:var(--muted);font-size:14px}
+    .segmented{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+    .chip{padding:10px 14px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);cursor:pointer;color:var(--muted)}
+    .chip.active{background:rgba(136,168,255,.16);border-color:rgba(149,238,255,.2);color:var(--text)}
+    .table-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px}
+    .table-wrap{overflow:auto;border-radius:22px;border:1px solid rgba(255,255,255,.08);margin-top:14px}
+    table{width:100%;border-collapse:collapse;min-width:980px;background:rgba(255,255,255,.03)}
+    th,td{padding:15px 14px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left;vertical-align:top}
+    th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);background:rgba(255,255,255,.03)}
+    tbody tr:hover{background:rgba(255,255,255,.025)}
+    .summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}
+    .summary-card{padding:18px;border-radius:20px;background:var(--panel-2);border:1px solid rgba(255,255,255,.08)}
+    .summary-card label{display:block;color:var(--muted);font-size:13px;margin-bottom:10px}
+    .summary-card strong{font-size:24px;letter-spacing:-.04em}
+    .warning-list,.receipt-list{display:grid;gap:12px;margin-top:16px}
+    .warning,.receipt,.cost-center-card{
+      padding:14px 16px;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:var(--panel-2)
     }
-
-    .button-secondary {
-      background: rgba(255,255,255,.06);
-      color: var(--text);
-      border-color: rgba(255,255,255,.1);
+    .warning{border-color:rgba(255,212,129,.18);background:rgba(255,212,129,.08)}
+    .warning strong{color:#fff4d2}
+    .receipt-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:8px}
+    .receipt-title{font-weight:800}
+    .receipt-meta{color:var(--muted);font-size:14px}
+    .badge{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:999px;font-size:12px;font-weight:800}
+    .badge-success{background:rgba(122,221,170,.15);color:var(--success)}
+    .badge-warning{background:rgba(255,212,129,.15);color:var(--warning)}
+    .badge-danger{background:rgba(255,152,152,.14);color:var(--danger)}
+    .badge-blue{background:rgba(136,168,255,.16);color:var(--secondary)}
+    .empty{padding:30px;border-radius:22px;border:1px dashed rgba(255,255,255,.12);text-align:center;color:var(--muted);background:rgba(255,255,255,.03)}
+    .pricing{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:18px}
+    .price-card{padding:18px;border-radius:20px;background:var(--panel-2);border:1px solid rgba(255,255,255,.08)}
+    .price-card.featured{background:linear-gradient(180deg, rgba(136,168,255,.16), rgba(255,255,255,.04));border-color:rgba(149,238,255,.22)}
+    .price-card h3{margin:0 0 8px;font-size:18px}
+    .price-card .price{font-size:32px;font-weight:900;letter-spacing:-.04em;margin-bottom:8px}
+    .price-card p{margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+    .price-card button{margin-top:14px;width:100%}
+    .small{font-size:13px;color:var(--muted)}
+    .cost-center-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+    .cost-center-card strong{display:block;font-size:15px}
+    .cost-center-card span{display:block;color:var(--muted);font-size:13px;margin-top:6px}
+    .footer-note{padding:16px 0 0;color:var(--muted);font-size:13px}
+    .modal-backdrop{
+      position:fixed;inset:0;background:rgba(3,10,18,.7);backdrop-filter:blur(10px);
+      display:none;align-items:center;justify-content:center;padding:18px;z-index:100
     }
-
-    .page {
-      padding: 34px 0 60px;
+    .modal-backdrop.open{display:flex}
+    .modal{
+      width:min(720px,100%);padding:24px;border-radius:28px;background:#0d172b;border:1px solid rgba(255,255,255,.08);box-shadow:var(--shadow)
     }
-
-    .hero {
-      display: grid;
-      grid-template-columns: 1.05fr .95fr;
-      gap: 22px;
-      margin-bottom: 22px;
+    .modal-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:14px}
+    .modal h3{margin:0;font-size:28px;letter-spacing:-.04em}
+    .modal p{margin:8px 0 0;color:var(--muted);line-height:1.7}
+    .modal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+    .close-button{background:transparent;border:none;color:var(--muted);font-size:28px;cursor:pointer;line-height:1}
+    .hidden{display:none !important}
+    @media (max-width:1120px){
+      .hero,.grid,.summary-grid,.pricing,.stats,.modal-grid{grid-template-columns:1fr 1fr}
     }
-
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--line);
-      border-radius: 28px;
-      box-shadow: var(--shadow);
-    }
-
-    .hero-copy {
-      padding: 30px;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.08);
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 18px;
-    }
-
-    .eyebrow-dot {
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--success);
-      box-shadow: 0 0 0 6px rgba(120,215,160,.14);
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(32px, 4vw, 54px);
-      line-height: 1.02;
-      letter-spacing: -0.04em;
-      max-width: 12ch;
-    }
-
-    .hero-copy p {
-      margin: 18px 0 0;
-      color: var(--muted);
-      font-size: 17px;
-      line-height: 1.7;
-      max-width: 58ch;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px;
-      margin-top: 24px;
-    }
-
-    .stat-card {
-      padding: 18px;
-      border-radius: 20px;
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.08);
-    }
-
-    .stat-label {
-      display: block;
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 10px;
-    }
-
-    .stat-value {
-      font-size: 24px;
-      font-weight: 900;
-      letter-spacing: -0.03em;
-    }
-
-    .upload-panel {
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .dropzone {
-      position: relative;
-      min-height: 280px;
-      padding: 28px;
-      border-radius: 24px;
-      border: 1.6px dashed rgba(155,228,255,.35);
-      background: linear-gradient(180deg, rgba(155,228,255,.1), rgba(255,255,255,.04));
-      display: grid;
-      place-items: center;
-      text-align: center;
-      transition: .2s ease;
-      overflow: hidden;
-    }
-
-    .dropzone.dragover {
-      transform: scale(1.01);
-      border-color: rgba(155,228,255,.8);
-      background: linear-gradient(180deg, rgba(155,228,255,.16), rgba(255,255,255,.05));
-    }
-
-    .dropzone input {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-      cursor: pointer;
-    }
-
-    .dropzone-content {
-      pointer-events: none;
-      position: relative;
-      z-index: 1;
-      display: grid;
-      gap: 14px;
-      justify-items: center;
-    }
-
-    .dropzone-icon {
-      width: 76px;
-      height: 76px;
-      border-radius: 24px;
-      display: grid;
-      place-items: center;
-      font-size: 32px;
-      background: rgba(255,255,255,.1);
-      border: 1px solid rgba(255,255,255,.12);
-      box-shadow: 0 16px 34px rgba(0,0,0,.18);
-    }
-
-    .dropzone strong {
-      display: block;
-      font-size: 28px;
-      letter-spacing: -0.03em;
-    }
-
-    .dropzone p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.7;
-      max-width: 42ch;
-      font-size: 15px;
-    }
-
-    .upload-meta {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .status-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .status {
-      padding: 14px 16px;
-      border-radius: 16px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.08);
-      color: var(--muted);
-      font-size: 14px;
-      min-height: 50px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex: 1;
-    }
-
-    .status.loading::before,
-    .status.success::before,
-    .status.error::before {
-      content: "";
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      flex: 0 0 auto;
-    }
-
-    .status.loading::before {
-      border: 2px solid rgba(255,255,255,.22);
-      border-top-color: var(--primary-2);
-      animation: spin .8s linear infinite;
-    }
-
-    .status.success::before { background: var(--success); }
-    .status.error::before { background: var(--danger); }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1.2fr .8fr;
-      gap: 22px;
-      align-items: start;
-    }
-
-    .table-panel,
-    .side-panel {
-      padding: 22px;
-    }
-
-    .panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-bottom: 16px;
-    }
-
-    .panel-header h2,
-    .side-panel h2,
-    .notice h3 {
-      margin: 0;
-      font-size: 22px;
-      letter-spacing: -0.02em;
-    }
-
-    .panel-header p,
-    .side-panel p,
-    .notice p,
-    .warning-list li,
-    .detail-list dt,
-    .detail-list dd {
-      color: var(--muted);
-    }
-
-    .panel-header p,
-    .side-panel p,
-    .notice p {
-      margin: 6px 0 0;
-      line-height: 1.6;
-      font-size: 14px;
-    }
-
-    .table-wrap {
-      overflow: auto;
-      border-radius: 20px;
-      border: 1px solid rgba(255,255,255,.08);
-      background: rgba(255,255,255,.04);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      min-width: 720px;
-    }
-
-    th, td {
-      padding: 15px 16px;
-      text-align: left;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      vertical-align: top;
-    }
-
-    th {
-      color: var(--muted);
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: .02em;
-    }
-
-    tbody tr:hover td { background: rgba(255,255,255,.03); }
-    tbody tr:last-child td { border-bottom: 1px solid rgba(255,255,255,.08); }
-
-    tfoot td {
-      font-weight: 900;
-      background: rgba(255,255,255,.05);
-    }
-
-    .empty-state {
-      padding: 36px 24px;
-      text-align: center;
-      color: var(--muted);
-      line-height: 1.7;
-    }
-
-    .tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.08);
-      color: var(--muted);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .side-stack {
-      display: grid;
-      gap: 22px;
-    }
-
-    .metric-grid {
-      display: grid;
-      gap: 14px;
-      grid-template-columns: repeat(2, 1fr);
-      margin-top: 18px;
-    }
-
-    .metric {
-      padding: 16px;
-      border-radius: 18px;
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.08);
-    }
-
-    .metric-label {
-      display: block;
-      color: var(--muted);
-      font-size: 13px;
-      margin-bottom: 8px;
-    }
-
-    .metric-value {
-      font-weight: 900;
-      font-size: 24px;
-      letter-spacing: -0.03em;
-    }
-
-    .notice {
-      padding: 22px;
-      border-radius: 24px;
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.08);
-    }
-
-    .warning-list {
-      list-style: none;
-      padding: 0;
-      margin: 14px 0 0;
-      display: grid;
-      gap: 10px;
-    }
-
-    .warning-list li {
-      padding: 12px 14px;
-      border-radius: 14px;
-      background: rgba(255,211,124,.08);
-      border: 1px solid rgba(255,211,124,.14);
-      color: #ffe4a8;
-      line-height: 1.55;
-      font-size: 14px;
-    }
-
-    .detail-list {
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px 16px;
-      margin: 0;
-    }
-
-    .detail-list dt {
-      font-size: 14px;
-    }
-
-    .detail-list dd {
-      margin: 0;
-      font-weight: 700;
-      color: var(--text);
-      text-align: right;
-    }
-
-    .footer-note {
-      margin-top: 24px;
-      text-align: center;
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    @media (max-width: 1080px) {
-      .hero,
-      .main-grid {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    @media (max-width: 720px) {
-      .topbar-inner,
-      .upload-meta,
-      .status-row,
-      .panel-header {
-        align-items: stretch;
-      }
-
-      .topbar-inner,
-      .status-row {
-        flex-direction: column;
-      }
-
-      .stats,
-      .metric-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .hero-copy,
-      .upload-panel,
-      .table-panel,
-      .side-panel,
-      .notice {
-        padding: 18px;
-      }
-
-      h1 { max-width: none; }
-      .dropzone strong { font-size: 24px; }
-      .button { width: 100%; }
-      .topbar-actions { width: 100%; }
-      .topbar-actions .pill, .topbar-actions .button { width: 100%; justify-content: center; }
+    @media (max-width:780px){
+      .hero,.grid,.summary-grid,.pricing,.stats,.cost-center-grid,.modal-grid{grid-template-columns:1fr}
+      .topbar-inner{align-items:flex-start}
+      .header-actions{width:100%}
+      .pill,.button{width:100%;justify-content:center}
+      .dropzone{min-height:240px}
+      h1{max-width:none}
+      .table-toolbar{align-items:flex-start}
     }
   </style>
 </head>
 <body>
+  <div class="modal-backdrop" id="upgradeModal">
+    <div class="modal">
+      <div class="modal-top">
+        <div>
+          <h3>Free-Limit erreicht</h3>
+          <p>Du hast deine 5 kostenlosen Rechnungen genutzt. Wenn du weitermachen willst, kannst du direkt auf einen bezahlten Plan wechseln.</p>
+        </div>
+        <button class="close-button" id="closeUpgradeModal" aria-label="Schließen">×</button>
+      </div>
+      <div class="modal-grid">
+        <div class="price-card featured">
+          <h3>Starter</h3>
+          <div class="price">19€</div>
+          <p>100 Rechnungen pro Monat</p>
+          <button class="button button-primary plan-button" data-plan="starter">Starter wählen</button>
+        </div>
+        <div class="price-card">
+          <h3>Business</h3>
+          <div class="price">49€</div>
+          <p>500 Rechnungen pro Monat</p>
+          <button class="button button-secondary plan-button" data-plan="business">Business wählen</button>
+        </div>
+        <div class="price-card">
+          <h3>Pro</h3>
+          <div class="price">99€</div>
+          <p>1500 Rechnungen pro Monat</p>
+          <button class="button button-secondary plan-button" data-plan="pro">Pro wählen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <header class="topbar">
     <div class="container topbar-inner">
-      <a class="brand" href="./index.html">
-        <span class="brand-mark">GL</span>
-        <span>GL Api</span>
+      <a class="brand" href="../">
+        <div class="brand-mark">IF</div>
+        <span>InvoiceFlow</span>
       </a>
-      <div class="topbar-actions">
-        <div class="pill" id="usagePill">Free Plan · 0 / 5 Invoices</div>
-        <a class="button button-secondary" href="./index.html">Zur Landingpage</a>
+      <div class="header-actions">
+        <div class="pill" id="usagePill">Free · 0 / 5 Rechnungen</div>
+        <a class="button button-secondary" href="../">Zur Landingpage</a>
       </div>
     </div>
   </header>
@@ -577,202 +219,313 @@
     <div class="container">
       <section class="hero">
         <div class="panel hero-copy">
-          <div class="eyebrow">
-            <span class="eyebrow-dot"></span>
-            Einfach PDF hochladen und direkt Überblick bekommen
-          </div>
-          <h1>Deine Rechnungsübersicht in Sekunden.</h1>
-          <p>
-            Diese Demo zeigt, wie aus einer PDF-Datei automatisch eine verständliche Tabelle wird.
-            Ohne Copy-Paste. Ohne Technik. Einfach Rechnung rein und die wichtigsten Infos sofort sehen.
-          </p>
+          <div class="eyebrow"><span class="dot"></span> Hochladen → prüfen → fertig</div>
+          <h1>Deine Rechnungen endlich sortiert.</h1>
+          <p>Zieh dein PDF hier rein und wir lesen Lieferant, Datum, Netto, MwSt., Gesamtbetrag und Kostenstelle automatisch aus. Du bekommst direkt eine Übersicht, mit der man auch wirklich arbeiten kann.</p>
           <div class="stats">
             <div class="stat-card">
-              <span class="stat-label">Hochgeladene Rechnungen</span>
-              <span class="stat-value" id="statInvoices">0</span>
+              <span class="stat-label">Rechnungen gesamt</span>
+              <div class="stat-value" id="statInvoices">0</div>
             </div>
             <div class="stat-card">
               <span class="stat-label">Gesamtsumme</span>
-              <span class="stat-value" id="statTotal">0,00 €</span>
+              <div class="stat-value" id="statTotal">0,00 €</div>
             </div>
             <div class="stat-card">
               <span class="stat-label">MwSt. gesamt</span>
-              <span class="stat-value" id="statVat">0,00 €</span>
+              <div class="stat-value" id="statVat">0,00 €</div>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Kostenstellen</span>
+              <div class="stat-value" id="statCostCenters">0</div>
             </div>
           </div>
         </div>
 
         <div class="panel upload-panel">
-          <label class="dropzone" id="dropzone">
-            <input type="file" id="fileInput" accept="application/pdf" />
+          <div class="dropzone" id="dropzone">
+            <input id="fileInput" type="file" accept="application/pdf" />
             <div class="dropzone-content">
               <div class="dropzone-icon">📄</div>
               <strong>Rechnung hochladen</strong>
-              <p>
-                Zieh deine PDF hier hinein oder tippe auf den Bereich, um eine Datei auszuwählen.
-                Danach wird sie automatisch verarbeitet.
-              </p>
-              <span class="tag">Nur PDF · Max. sinnvoll für Demo-Dateien</span>
+              <p>PDF anklicken oder hineinziehen. Danach landet die Rechnung automatisch in deiner Tabelle.</p>
+              <div class="button button-primary">PDF auswählen</div>
             </div>
-          </label>
-
-          <div class="upload-meta">
-            <span id="selectedFile">Noch keine Datei ausgewählt</span>
-            <span>Endpoint: /demo/invoice</span>
           </div>
-
-          <div class="status-row">
-            <div class="status" id="statusBox">Bereit. Lade eine Rechnung hoch, um die Demo zu testen.</div>
-            <button class="button button-primary" id="uploadButton">Jetzt verarbeiten</button>
+          <div class="helper-row">
+            <span id="statusText">Bereit für deinen ersten Upload</span>
+            <span>Demo-Endpunkt: /demo/invoice</span>
           </div>
         </div>
       </section>
 
-      <section class="main-grid">
-        <div class="panel table-panel">
-          <div class="panel-header">
-            <div>
-              <h2>Deine Rechnungen</h2>
-              <p>Jede verarbeitete Rechnung ergänzt die Tabelle automatisch.</p>
+      <section class="grid">
+        <div class="stack">
+          <div class="panel section-panel">
+            <h2>Was du hier bekommst</h2>
+            <p>Die App ist bewusst simpel aufgebaut: Rechnung rein, Daten raus, sofort Überblick.</p>
+            <div class="list">
+              <div class="list-item"><strong>Automatische Erkennung</strong><span>Lieferant, Datum, Netto, MwSt. und Gesamtbetrag</span></div>
+              <div class="list-item"><strong>Kostenstellen inklusive</strong><span>z. B. Software, Marketing, Büro, Fahrzeug oder Reisen</span></div>
+              <div class="list-item"><strong>Hinweise bei Unsicherheit</strong><span>Damit du Dinge schnell gegenprüfen kannst</span></div>
+              <div class="list-item"><strong>Bereit für Paywall & Tracking</strong><span>Schon im Frontend vorbereitet</span></div>
             </div>
-            <button class="button button-secondary" id="clearButton">Tabelle leeren</button>
           </div>
 
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Dateiname</th>
-                  <th>Lieferant</th>
-                  <th>Datum</th>
-                  <th>Gesamt</th>
-                  <th>MwSt.</th>
-                  <th>Confidence</th>
-                </tr>
-              </thead>
-              <tbody id="invoiceTableBody">
-                <tr>
-                  <td colspan="7" class="empty-state">
-                    Noch keine Rechnung verarbeitet.<br />
-                    Lade oben eine PDF hoch und die Tabelle füllt sich automatisch.
-                  </td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="4">Summen</td>
-                  <td id="tableTotal">0,00 €</td>
-                  <td id="tableVat">0,00 €</td>
-                  <td id="tableConfidence">–</td>
-                </tr>
-              </tfoot>
-            </table>
+          <div class="panel section-panel">
+            <h2>Hinweise</h2>
+            <p>Falls etwas nicht ganz eindeutig erkannt wird, siehst du es hier direkt.</p>
+            <div id="warningsList" class="warning-list">
+              <div class="empty">Noch keine Hinweise vorhanden.</div>
+            </div>
+          </div>
+
+          <div class="panel section-panel">
+            <h2>Kostenstellen</h2>
+            <p>So bekommen Rechnungen direkt mehr Struktur. Die Zuordnung läuft automatisch über Lieferant, Text und erkannte Inhalte.</p>
+            <div class="cost-center-grid" id="costCenterGrid">
+              <div class="cost-center-card">
+                <strong>Software</strong>
+                <span>Adobe, OpenAI, Google Workspace, Microsoft, Slack, Zoom</span>
+              </div>
+              <div class="cost-center-card">
+                <strong>Marketing</strong>
+                <span>Meta Ads, Google Ads, LinkedIn Ads, Canva, Mailchimp</span>
+              </div>
+              <div class="cost-center-card">
+                <strong>Büro</strong>
+                <span>Amazon, Staples, Ikea, Drucker, Material</span>
+              </div>
+              <div class="cost-center-card">
+                <strong>Fahrzeug / Reisen</strong>
+                <span>Shell, Aral, Bahn, Booking, Lufthansa, Sixt</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel section-panel">
+            <h2>Preise</h2>
+            <p>Die Buttons sind bereits für Stripe vorbereitet. Du musst nur noch deine echten Links einsetzen.</p>
+            <div class="pricing">
+              <div class="price-card">
+                <h3>Free</h3>
+                <div class="price">0€</div>
+                <p>5 Rechnungen zum Testen</p>
+                <button class="button button-secondary" data-plan="free">Aktueller Plan</button>
+              </div>
+              <div class="price-card featured">
+                <h3>Starter</h3>
+                <div class="price">19€</div>
+                <p>100 Rechnungen pro Monat</p>
+                <button class="button button-primary plan-button" data-plan="starter">Starter wählen</button>
+              </div>
+              <div class="price-card">
+                <h3>Business</h3>
+                <div class="price">49€</div>
+                <p>500 Rechnungen pro Monat</p>
+                <button class="button button-secondary plan-button" data-plan="business">Business wählen</button>
+              </div>
+              <div class="price-card">
+                <h3>Pro</h3>
+                <div class="price">99€</div>
+                <p>1500 Rechnungen pro Monat</p>
+                <button class="button button-secondary plan-button" data-plan="pro">Pro wählen</button>
+              </div>
+            </div>
+            <div class="footer-note">
+              Im Code sind schon <code>STRIPE_LINKS</code>, Tracking-Events und das Upgrade-Popup vorbereitet.
+            </div>
           </div>
         </div>
 
-        <div class="side-stack">
-          <aside class="panel side-panel">
-            <h2>Aktuelle Rechnung</h2>
-            <p>Nach jedem Upload siehst du hier die zuletzt erkannten Daten noch einmal kompakt.</p>
-            <div class="metric-grid">
-              <div class="metric">
-                <span class="metric-label">Lieferant</span>
-                <span class="metric-value" id="currentSupplier" style="font-size:18px;">–</span>
+        <div class="stack">
+          <div class="panel section-panel">
+            <div class="table-toolbar">
+              <div>
+                <h2>Deine Übersicht</h2>
+                <p>Jede erkannte Rechnung landet direkt hier – inklusive Kostenstelle und Erkennungsstatus.</p>
               </div>
-              <div class="metric">
-                <span class="metric-label">Datum</span>
-                <span class="metric-value" id="currentDate" style="font-size:18px;">–</span>
-              </div>
-              <div class="metric">
-                <span class="metric-label">Gesamt</span>
-                <span class="metric-value" id="currentTotal">0,00 €</span>
-              </div>
-              <div class="metric">
-                <span class="metric-label">MwSt.</span>
-                <span class="metric-value" id="currentVat">0,00 €</span>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="button button-ghost" id="exportCsvButton">CSV exportieren</button>
+                <button class="button button-secondary" id="clearButton">Liste löschen</button>
               </div>
             </div>
-          </aside>
 
-          <aside class="panel side-panel">
-            <h2>Session-Überblick</h2>
-            <p>Eine kleine Live-Zusammenfassung deiner aktuellen Demo-Nutzung.</p>
-            <dl class="detail-list">
-              <dt>Rechnungen in Tabelle</dt>
-              <dd id="detailCount">0</dd>
-              <dt>Durchschnittliche Confidence</dt>
-              <dd id="detailAvgConfidence">0%</dd>
-              <dt>Gesamtbetrag</dt>
-              <dd id="detailGrandTotal">0,00 €</dd>
-              <dt>MwSt. gesamt</dt>
-              <dd id="detailGrandVat">0,00 €</dd>
-            </dl>
-          </aside>
+            <div class="segmented" id="filterBar">
+              <button class="chip active" data-filter="all">Alle</button>
+              <button class="chip" data-filter="Software">Software</button>
+              <button class="chip" data-filter="Marketing">Marketing</button>
+              <button class="chip" data-filter="Büro">Büro</button>
+              <button class="chip" data-filter="Fahrzeug">Fahrzeug</button>
+              <button class="chip" data-filter="Reisen">Reisen</button>
+              <button class="chip" data-filter="Sonstiges">Sonstiges</button>
+            </div>
 
-          <aside class="notice" id="warningsCard">
-            <h3>Hinweise & Warnings</h3>
-            <p>Falls bei der Rechnung etwas unsicher erkannt wurde, erscheint es hier.</p>
-            <ul class="warning-list" id="warningList">
-              <li>Noch keine Hinweise vorhanden. Nach einem Upload werden eventuelle Warnings hier angezeigt.</li>
-            </ul>
-          </aside>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Datei</th>
+                    <th>Lieferant</th>
+                    <th>Datum</th>
+                    <th>Netto</th>
+                    <th>MwSt.</th>
+                    <th>Gesamt</th>
+                    <th>Kostenstelle</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="tableBody">
+                  <tr>
+                    <td colspan="8">
+                      <div class="empty">Noch keine Rechnungen hochgeladen.</div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="summary-grid">
+              <div class="summary-card">
+                <label>Rechnungen</label>
+                <strong id="summaryInvoices">0</strong>
+              </div>
+              <div class="summary-card">
+                <label>Netto gesamt</label>
+                <strong id="summaryNet">0,00 €</strong>
+              </div>
+              <div class="summary-card">
+                <label>MwSt. gesamt</label>
+                <strong id="summaryVat">0,00 €</strong>
+              </div>
+              <div class="summary-card">
+                <label>Brutto gesamt</label>
+                <strong id="summaryGross">0,00 €</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel section-panel">
+            <h2>Zuletzt verarbeitet</h2>
+            <p>So siehst du direkt, was gerade erkannt wurde.</p>
+            <div id="receiptList" class="receipt-list">
+              <div class="empty">Noch keine Rechnung verarbeitet.</div>
+            </div>
+          </div>
         </div>
       </section>
-
-      <div class="footer-note">
-        Demo-Endpoint: <strong>https://ai-extract-api.onrender.com/demo/invoice</strong>
-      </div>
     </div>
   </main>
 
   <script>
     const API_URL = 'https://ai-extract-api.onrender.com/demo/invoice';
     const FREE_LIMIT = 5;
+    const STORAGE_KEY = 'invoiceflow_demo_records_v3';
+    const TRACKING_KEY = 'invoiceflow_tracking_events_v1';
+
+    const STRIPE_LINKS = {
+      starter: 'https://buy.stripe.com/test_starter_link_here',
+      business: 'https://buy.stripe.com/test_business_link_here',
+      pro: 'https://buy.stripe.com/test_pro_link_here'
+    };
+
+    const COST_CENTER_RULES = [
+      { name: 'Software', keywords: ['adobe','openai','chatgpt','google workspace','microsoft','notion','slack','zoom','figma','dropbox','canva','atlassian','github','cloudflare','hosting','render'] },
+      { name: 'Marketing', keywords: ['meta','facebook','instagram','google ads','linkedin ads','mailchimp','brevo','newsletter','ads','tiktok ads'] },
+      { name: 'Büro', keywords: ['amazon','ikea','staples','büro','office','drucker','papeterie','toner','hardware','monitor','tastatur','maus'] },
+      { name: 'Fahrzeug', keywords: ['shell','aral','total','star','tank','reifen','werkstatt','kfz','autohaus','sixt','euromaster'] },
+      { name: 'Reisen', keywords: ['bahn','db','deutsche bahn','booking','airbnb','hotel','lufthansa','ryanair','uber','bolt','taxi','flug'] }
+    ];
+
+    let records = loadRecords();
+    let currentFilter = 'all';
 
     const fileInput = document.getElementById('fileInput');
-    const uploadButton = document.getElementById('uploadButton');
-    const clearButton = document.getElementById('clearButton');
-    const selectedFile = document.getElementById('selectedFile');
-    const statusBox = document.getElementById('statusBox');
     const dropzone = document.getElementById('dropzone');
-    const invoiceTableBody = document.getElementById('invoiceTableBody');
-    const warningList = document.getElementById('warningList');
+    const statusText = document.getElementById('statusText');
     const usagePill = document.getElementById('usagePill');
+    const tableBody = document.getElementById('tableBody');
+    const warningsList = document.getElementById('warningsList');
+    const receiptList = document.getElementById('receiptList');
+    const clearButton = document.getElementById('clearButton');
+    const exportCsvButton = document.getElementById('exportCsvButton');
+    const filterBar = document.getElementById('filterBar');
+    const upgradeModal = document.getElementById('upgradeModal');
+    const closeUpgradeModal = document.getElementById('closeUpgradeModal');
+
+    const summaryInvoices = document.getElementById('summaryInvoices');
+    const summaryNet = document.getElementById('summaryNet');
+    const summaryVat = document.getElementById('summaryVat');
+    const summaryGross = document.getElementById('summaryGross');
 
     const statInvoices = document.getElementById('statInvoices');
     const statTotal = document.getElementById('statTotal');
     const statVat = document.getElementById('statVat');
-    const tableTotal = document.getElementById('tableTotal');
-    const tableVat = document.getElementById('tableVat');
-    const tableConfidence = document.getElementById('tableConfidence');
-    const detailCount = document.getElementById('detailCount');
-    const detailAvgConfidence = document.getElementById('detailAvgConfidence');
-    const detailGrandTotal = document.getElementById('detailGrandTotal');
-    const detailGrandVat = document.getElementById('detailGrandVat');
-    const currentSupplier = document.getElementById('currentSupplier');
-    const currentDate = document.getElementById('currentDate');
-    const currentTotal = document.getElementById('currentTotal');
-    const currentVat = document.getElementById('currentVat');
+    const statCostCenters = document.getElementById('statCostCenters');
 
-    let invoices = [];
+    function track(eventName, data = {}) {
+      const payload = {
+        event: eventName,
+        data,
+        ts: new Date().toISOString(),
+        path: location.pathname
+      };
 
-    function setStatus(message, type = '') {
-      statusBox.textContent = message;
-      statusBox.className = 'status';
-      if (type) statusBox.classList.add(type);
+      try {
+        const existing = JSON.parse(localStorage.getItem(TRACKING_KEY) || '[]');
+        existing.push(payload);
+        localStorage.setItem(TRACKING_KEY, JSON.stringify(existing.slice(-300)));
+      } catch (error) {}
+
+      if (window.plausible) {
+        window.plausible(eventName, { props: data });
+      }
+
+      if (window.gtag) {
+        window.gtag('event', eventName, data);
+      }
+    }
+
+    function loadRecords() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function saveRecords() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
     }
 
     function formatCurrency(value) {
-      const num = Number(value);
-      if (!Number.isFinite(num)) return '–';
-      return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(num);
+      const numeric = Number(value || 0);
+      return new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(numeric);
     }
 
-    function formatPercent(value) {
-      const num = Number(value);
-      if (!Number.isFinite(num)) return '–';
-      return `${Math.round(num * 100)}%`;
+    function normalizeNumber(value) {
+      if (value === null || value === undefined || value === '') return 0;
+      if (typeof value === 'number') return value;
+      let str = String(value).trim();
+      str = str.replace(/\s/g, '').replace(/[€$]/g, '');
+
+      if (str.includes(',') && str.includes('.')) {
+        if (str.lastIndexOf(',') > str.lastIndexOf('.')) {
+          str = str.replace(/\./g, '').replace(',', '.');
+        } else {
+          str = str.replace(/,/g, '');
+        }
+      } else if (str.includes(',')) {
+        str = str.replace(',', '.');
+      }
+
+      const num = parseFloat(str);
+      return Number.isFinite(num) ? num : 0;
+    }
+
+    function normalizeDate(value) {
+      if (!value) return '—';
+      return String(value).trim();
     }
 
     function escapeHtml(value) {
@@ -784,206 +537,327 @@
         .replace(/'/g, '&#039;');
     }
 
-    function normalizeNumber(value) {
-      if (typeof value === 'number') return value;
-      if (typeof value !== 'string') return 0;
-      const cleaned = value
-        .replace(/€/g, '')
-        .replace(/\s/g, '')
-        .replace(/\./g, '')
-        .replace(/,/g, '.');
-      const num = Number(cleaned);
-      return Number.isFinite(num) ? num : 0;
-    }
+    function inferCostCenter({ supplier = '', filename = '', warnings = [], rawText = '' }) {
+      const haystack = [supplier, filename, rawText, ...(warnings || [])].join(' ').toLowerCase();
 
-    function pickField(obj, keys, fallback = '–') {
-      for (const key of keys) {
-        const value = obj?.[key];
-        if (value !== undefined && value !== null && String(value).trim() !== '') {
-          return value;
+      for (const rule of COST_CENTER_RULES) {
+        if (rule.keywords.some(keyword => haystack.includes(keyword))) {
+          return rule.name;
         }
       }
-      return fallback;
+
+      if (haystack.includes('amazon')) return 'Büro';
+      return 'Sonstiges';
     }
 
-    function extractInvoiceData(payload) {
-      const data = payload?.data ?? payload ?? {};
-      const warnings = Array.isArray(payload?.warnings) ? payload.warnings : [];
-      const confidence = Number(payload?.confidence ?? 0);
-
-      return {
-        supplier: pickField(data, ['supplier', 'vendor', 'supplier_name', 'company', 'issuer']),
-        date: pickField(data, ['date', 'invoice_date', 'issued_at', 'billing_date']),
-        total: normalizeNumber(pickField(data, ['total', 'total_amount', 'amount_total', 'gross_total', 'invoice_total'], 0)),
-        vat: normalizeNumber(pickField(data, ['vat', 'tax', 'vat_amount', 'tax_amount'], 0)),
-        warnings,
-        confidence,
-        raw: data,
-      };
+    function getStatusBadge(confidence) {
+      if (confidence >= 0.85) return '<span class="badge badge-success">Klar erkannt</span>';
+      if (confidence >= 0.6) return '<span class="badge badge-warning">Bitte kurz prüfen</span>';
+      return '<span class="badge badge-danger">Unsicher</span>';
     }
 
-    function renderWarnings(warnings) {
+    function updateUsage() {
+      usagePill.textContent = `Free · ${records.length} / ${FREE_LIMIT} Rechnungen`;
+    }
+
+    function renderWarnings() {
+      const warnings = records.flatMap(record =>
+        (record.warnings || []).map(warning => ({
+          filename: record.filename,
+          warning
+        }))
+      ).slice(0, 8);
+
       if (!warnings.length) {
-        warningList.innerHTML = '<li>Keine Warnings für den letzten Upload. Das sieht gut aus.</li>';
+        warningsList.innerHTML = '<div class="empty">Noch keine Hinweise vorhanden.</div>';
         return;
       }
 
-      warningList.innerHTML = warnings
-        .map(item => `<li>${escapeHtml(item)}</li>`)
-        .join('');
+      warningsList.innerHTML = warnings.map(item => `
+        <div class="warning">
+          <strong>${escapeHtml(item.filename)}</strong>
+          <div class="small" style="margin-top:6px">${escapeHtml(item.warning)}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderReceipts() {
+      if (!records.length) {
+        receiptList.innerHTML = '<div class="empty">Noch keine Rechnung verarbeitet.</div>';
+        return;
+      }
+
+      const latest = [...records].slice(-5).reverse();
+
+      receiptList.innerHTML = latest.map(record => `
+        <div class="receipt">
+          <div class="receipt-top">
+            <div>
+              <div class="receipt-title">${escapeHtml(record.supplier || 'Unbekannter Lieferant')}</div>
+              <div class="receipt-meta">${escapeHtml(record.filename)} · ${escapeHtml(record.date || '—')}</div>
+            </div>
+            ${getStatusBadge(record.confidence)}
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <span class="badge badge-blue">${escapeHtml(record.costCenter)}</span>
+            <span class="badge badge-success">${formatCurrency(record.total)}</span>
+            <span class="small">MwSt. ${formatCurrency(record.vat)}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function getFilteredRecords() {
+      if (currentFilter === 'all') return records;
+      return records.filter(record => record.costCenter === currentFilter);
     }
 
     function renderTable() {
-      if (!invoices.length) {
-        invoiceTableBody.innerHTML = `
-          <tr>
-            <td colspan="7" class="empty-state">
-              Noch keine Rechnung verarbeitet.<br />
-              Lade oben eine PDF hoch und die Tabelle füllt sich automatisch.
-            </td>
-          </tr>
-        `;
-      } else {
-        invoiceTableBody.innerHTML = invoices.map((invoice, index) => `
-          <tr>
-            <td>${index + 1}</td>
-            <td>${escapeHtml(invoice.fileName)}</td>
-            <td>${escapeHtml(invoice.supplier)}</td>
-            <td>${escapeHtml(invoice.date)}</td>
-            <td>${formatCurrency(invoice.total)}</td>
-            <td>${formatCurrency(invoice.vat)}</td>
-            <td>${formatPercent(invoice.confidence)}</td>
-          </tr>
-        `).join('');
-      }
+      const visible = getFilteredRecords();
 
-      const total = invoices.reduce((sum, invoice) => sum + invoice.total, 0);
-      const vat = invoices.reduce((sum, invoice) => sum + invoice.vat, 0);
-      const avgConfidence = invoices.length
-        ? invoices.reduce((sum, invoice) => sum + invoice.confidence, 0) / invoices.length
-        : 0;
-
-      statInvoices.textContent = String(invoices.length);
-      statTotal.textContent = formatCurrency(total);
-      statVat.textContent = formatCurrency(vat);
-      tableTotal.textContent = formatCurrency(total);
-      tableVat.textContent = formatCurrency(vat);
-      tableConfidence.textContent = invoices.length ? formatPercent(avgConfidence) : '–';
-      detailCount.textContent = String(invoices.length);
-      detailAvgConfidence.textContent = invoices.length ? formatPercent(avgConfidence) : '0%';
-      detailGrandTotal.textContent = formatCurrency(total);
-      detailGrandVat.textContent = formatCurrency(vat);
-      usagePill.textContent = `Free Plan · ${invoices.length} / ${FREE_LIMIT} Invoices`;
-    }
-
-    function setCurrentInvoice(invoice) {
-      currentSupplier.textContent = invoice.supplier || '–';
-      currentDate.textContent = invoice.date || '–';
-      currentTotal.textContent = formatCurrency(invoice.total);
-      currentVat.textContent = formatCurrency(invoice.vat);
-    }
-
-    async function uploadInvoice() {
-      const file = fileInput.files?.[0];
-      if (!file) {
-        setStatus('Bitte wähle zuerst eine PDF-Datei aus.', 'error');
+      if (!visible.length) {
+        tableBody.innerHTML = `<tr><td colspan="8"><div class="empty">${currentFilter === 'all' ? 'Noch keine Rechnungen hochgeladen.' : 'Für diese Kostenstelle gibt es noch keine Einträge.'}</div></td></tr>`;
         return;
       }
 
-      if (invoices.length >= FREE_LIMIT) {
-        setStatus(`Free-Limit erreicht: ${FREE_LIMIT} / ${FREE_LIMIT} Rechnungen in dieser Demo-Session.`, 'error');
+      tableBody.innerHTML = visible.map(record => `
+        <tr>
+          <td>${escapeHtml(record.filename)}</td>
+          <td>${escapeHtml(record.supplier || '—')}</td>
+          <td>${escapeHtml(record.date || '—')}</td>
+          <td>${formatCurrency(record.net)}</td>
+          <td>${formatCurrency(record.vat)}</td>
+          <td>${formatCurrency(record.total)}</td>
+          <td><span class="badge badge-blue">${escapeHtml(record.costCenter)}</span></td>
+          <td>${getStatusBadge(record.confidence)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderStats() {
+      const totalInvoices = records.length;
+      const totalNet = records.reduce((sum, item) => sum + item.net, 0);
+      const totalVat = records.reduce((sum, item) => sum + item.vat, 0);
+      const totalGross = records.reduce((sum, item) => sum + item.total, 0);
+      const costCenters = new Set(records.map(item => item.costCenter)).size;
+
+      summaryInvoices.textContent = String(totalInvoices);
+      summaryNet.textContent = formatCurrency(totalNet);
+      summaryVat.textContent = formatCurrency(totalVat);
+      summaryGross.textContent = formatCurrency(totalGross);
+
+      statInvoices.textContent = String(totalInvoices);
+      statTotal.textContent = formatCurrency(totalGross);
+      statVat.textContent = formatCurrency(totalVat);
+      statCostCenters.textContent = String(costCenters);
+    }
+
+    function rerender() {
+      updateUsage();
+      renderWarnings();
+      renderReceipts();
+      renderTable();
+      renderStats();
+      saveRecords();
+    }
+
+    function openUpgradeModal() {
+      upgradeModal.classList.add('open');
+    }
+
+    function closeModal() {
+      upgradeModal.classList.remove('open');
+    }
+
+    function exportCsv() {
+      if (!records.length) {
+        alert('Es gibt noch keine Rechnungen zum Exportieren.');
         return;
       }
 
-      setStatus('Rechnung wird verarbeitet…', 'loading');
-      uploadButton.disabled = true;
-      uploadButton.textContent = 'Wird verarbeitet…';
+      const rows = [
+        ['Datei', 'Lieferant', 'Datum', 'Netto', 'MwSt', 'Gesamt', 'Kostenstelle', 'Confidence']
+      ];
+
+      records.forEach(record => {
+        rows.push([
+          record.filename,
+          record.supplier,
+          record.date,
+          record.net,
+          record.vat,
+          record.total,
+          record.costCenter,
+          record.confidence
+        ]);
+      });
+
+      const csv = rows
+        .map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(';'))
+        .join('\n');
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'invoiceflow-export.csv';
+      link.click();
+      URL.revokeObjectURL(url);
+      track('csv_exported', { count: records.length });
+    }
+
+    function setFilter(filterValue) {
+      currentFilter = filterValue;
+      [...filterBar.querySelectorAll('.chip')].forEach(button => {
+        button.classList.toggle('active', button.dataset.filter === filterValue);
+      });
+      renderTable();
+      track('filter_changed', { filter: filterValue });
+    }
+
+    async function handleFile(file) {
+      if (!file) return;
+
+      if (records.length >= FREE_LIMIT) {
+        statusText.textContent = 'Free-Limit erreicht';
+        openUpgradeModal();
+        track('free_limit_hit', { count: records.length });
+        return;
+      }
+
+      track('upload_started', { filename: file.name, size: file.size });
+      statusText.textContent = `Lese ${file.name} …`;
+
+      const formData = new FormData();
+      formData.append('file', file);
 
       try {
-        const formData = new FormData();
-        formData.append('file', file);
-
         const response = await fetch(API_URL, {
           method: 'POST',
-          body: formData,
+          body: formData
         });
 
-        const rawText = await response.text();
-        let payload;
-
-        try {
-          payload = rawText ? JSON.parse(rawText) : {};
-        } catch (error) {
-          throw new Error('Die Antwort konnte nicht als JSON gelesen werden.');
-        }
+        const result = await response.json().catch(() => ({}));
 
         if (!response.ok) {
-          const detail = payload?.detail?.error || payload?.detail || payload?.error || `HTTP ${response.status}`;
-          throw new Error(typeof detail === 'string' ? detail : JSON.stringify(detail));
+          throw new Error(result.detail?.error || result.detail || result.message || 'Upload fehlgeschlagen');
         }
 
-        const parsed = extractInvoiceData(payload);
-        const invoice = {
-          fileName: file.name,
-          ...parsed,
+        const data = result.data || result.invoice || result || {};
+        const warnings = Array.isArray(result.warnings) ? result.warnings : [];
+        const confidence = Number(result.confidence ?? 0.75);
+        const supplier = data.supplier || data.vendor || data.company || data.from || 'Unbekannt';
+        const date = normalizeDate(data.date || data.invoice_date || data.issued_at);
+        const total = normalizeNumber(data.total || data.gross || data.amount_total || data.total_amount);
+        const vat = normalizeNumber(data.vat || data.tax || data.tax_amount || data.sales_tax);
+        const netCandidate = data.net || data.subtotal || data.amount_net;
+        const net = netCandidate !== undefined && netCandidate !== null && netCandidate !== '' ? normalizeNumber(netCandidate) : Math.max(0, total - vat);
+        const costCenter = inferCostCenter({
+          supplier,
+          filename: file.name,
+          warnings,
+          rawText: JSON.stringify(data)
+        });
+
+        const record = {
+          id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          filename: file.name,
+          supplier,
+          date,
+          net,
+          vat,
+          total,
+          warnings,
+          confidence,
+          costCenter,
+          createdAt: new Date().toISOString()
         };
 
-        invoices.unshift(invoice);
-        renderTable();
-        renderWarnings(invoice.warnings);
-        setCurrentInvoice(invoice);
-        setStatus(`Fertig. ${file.name} wurde erfolgreich verarbeitet.`, 'success');
-        fileInput.value = '';
-        selectedFile.textContent = 'Noch keine Datei ausgewählt';
+        records.push(record);
+        statusText.textContent = `${file.name} wurde hinzugefügt`;
+        rerender();
+
+        track('upload_success', {
+          filename: file.name,
+          cost_center: costCenter,
+          confidence: confidence,
+          warnings_count: warnings.length
+        });
       } catch (error) {
         console.error(error);
-        setStatus(`Fehler: ${error.message || 'Upload fehlgeschlagen.'}`, 'error');
+        statusText.textContent = 'Upload fehlgeschlagen';
+        alert(`Das hat leider nicht geklappt.\n\n${error.message || 'Unbekannter Fehler'}`);
+        track('upload_failed', { filename: file.name, message: error.message || 'unknown_error' });
       } finally {
-        uploadButton.disabled = false;
-        uploadButton.textContent = 'Jetzt verarbeiten';
+        fileInput.value = '';
       }
     }
 
-    fileInput.addEventListener('change', () => {
-      const file = fileInput.files?.[0];
-      selectedFile.textContent = file ? `Ausgewählt: ${file.name}` : 'Noch keine Datei ausgewählt';
+    dropzone.addEventListener('dragover', event => {
+      event.preventDefault();
+      dropzone.classList.add('dragover');
     });
 
-    uploadButton.addEventListener('click', uploadInvoice);
-
-    clearButton.addEventListener('click', () => {
-      invoices = [];
-      renderTable();
-      renderWarnings([]);
-      setCurrentInvoice({ supplier: '–', date: '–', total: 0, vat: 0 });
-      setStatus('Tabelle geleert. Du kannst neue Rechnungen hochladen.', 'success');
-    });
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-      dropzone.addEventListener(eventName, event => {
-        event.preventDefault();
-        dropzone.classList.add('dragover');
-      });
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-      dropzone.addEventListener(eventName, event => {
-        event.preventDefault();
-        dropzone.classList.remove('dragover');
-      });
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('dragover');
     });
 
     dropzone.addEventListener('drop', event => {
-      const files = event.dataTransfer?.files;
-      if (files?.length) {
-        fileInput.files = files;
-        selectedFile.textContent = `Ausgewählt: ${files[0].name}`;
-      }
+      event.preventDefault();
+      dropzone.classList.remove('dragover');
+      const file = event.dataTransfer.files?.[0];
+      if (file) handleFile(file);
     });
 
-    renderTable();
-    renderWarnings([]);
-    setCurrentInvoice({ supplier: '–', date: '–', total: 0, vat: 0 });
+    fileInput.addEventListener('change', event => {
+      const file = event.target.files?.[0];
+      if (file) handleFile(file);
+    });
+
+    clearButton.addEventListener('click', () => {
+      if (!records.length) return;
+      const confirmed = confirm('Willst du wirklich alle Einträge in dieser Demo löschen?');
+      if (!confirmed) return;
+      records = [];
+      rerender();
+      statusText.textContent = 'Liste wurde geleert';
+      track('records_cleared');
+    });
+
+    exportCsvButton.addEventListener('click', exportCsv);
+
+    filterBar.addEventListener('click', event => {
+      const button = event.target.closest('.chip');
+      if (!button) return;
+      setFilter(button.dataset.filter);
+    });
+
+    document.querySelectorAll('.plan-button').forEach(button => {
+      button.addEventListener('click', () => {
+        const plan = button.dataset.plan;
+        const link = STRIPE_LINKS[plan];
+        track('plan_click', { plan });
+
+        if (!link || link.includes('_here')) {
+          alert(`Stripe-Link für "${plan}" ist noch nicht eingetragen. Ersetze einfach STRIPE_LINKS.${plan} im Code.`);
+          return;
+        }
+
+        window.open(link, '_blank', 'noopener,noreferrer');
+      });
+    });
+
+    closeUpgradeModal.addEventListener('click', closeModal);
+    upgradeModal.addEventListener('click', event => {
+      if (event.target === upgradeModal) closeModal();
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeModal();
+    });
+
+    rerender();
+    track('page_view', { page: 'app' });
   </script>
 </body>
 </html>

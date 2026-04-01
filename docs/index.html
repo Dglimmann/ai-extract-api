@@ -3,861 +3,436 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GL Api – Rechnungen hochladen statt abtippen</title>
-  <meta name="description" content="Lade Rechnungen hoch und erhalte automatisch eine übersichtliche Tabelle mit Lieferant, Datum, Betrag und MwSt." />
+  <title>InvoiceFlow – Rechnungen hochladen. Übersicht bekommen.</title>
+  <meta name="description" content="Lade deine Rechnungen hoch und behalte sofort den Überblick: Lieferant, Datum, Betrag, MwSt. und Kostenstelle automatisch in einer Tabelle." />
   <style>
-    :root {
-      --bg: #08111f;
-      --bg-soft: #101b2d;
-      --card: rgba(255,255,255,0.08);
-      --card-strong: rgba(255,255,255,0.12);
-      --line: rgba(255,255,255,0.12);
-      --text: #eef4ff;
-      --muted: #b8c6df;
-      --primary: #7c9cff;
-      --primary-2: #9be4ff;
-      --success: #72d59b;
-      --shadow: 0 25px 60px rgba(0,0,0,.35);
-      --radius: 24px;
-      --radius-sm: 16px;
-      --max: 1180px;
+    :root{
+      --bg:#07111f;
+      --bg-soft:#0d1830;
+      --panel:rgba(255,255,255,.08);
+      --panel-strong:rgba(255,255,255,.1);
+      --line:rgba(255,255,255,.1);
+      --text:#eff5ff;
+      --muted:#b1c0d9;
+      --primary:#8ca8ff;
+      --secondary:#95efff;
+      --success:#79d8a5;
+      --warning:#ffd68a;
+      --shadow:0 26px 70px rgba(0,0,0,.35);
+      --radius:28px;
+      --max:1180px;
     }
-
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--text);
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      color:var(--text);
+      font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       background:
-        radial-gradient(circle at top left, rgba(124, 156, 255, 0.22), transparent 28%),
-        radial-gradient(circle at top right, rgba(155, 228, 255, 0.18), transparent 22%),
-        linear-gradient(180deg, #08111f 0%, #0c1526 100%);
-      min-height: 100vh;
-    }
-
-    a { color: inherit; text-decoration: none; }
-
-    .container {
-      width: min(var(--max), calc(100% - 32px));
-      margin: 0 auto;
-    }
-
-    .topbar {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      backdrop-filter: blur(16px);
-      background: rgba(8, 17, 31, 0.7);
-      border-bottom: 1px solid rgba(255,255,255,.06);
-    }
-
-    .topbar-inner {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 18px;
-      padding: 16px 0;
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 700;
-      letter-spacing: .01em;
-    }
-
-    .brand-mark {
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, var(--primary), var(--primary-2));
-      color: #08111f;
-      font-weight: 900;
-      box-shadow: 0 10px 30px rgba(124, 156, 255, .35);
-    }
-
-    .nav {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .nav a:hover { color: var(--text); }
-
-    .button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      padding: 14px 20px;
-      border-radius: 16px;
-      border: 1px solid transparent;
-      font-weight: 700;
-      transition: .2s ease;
-      cursor: pointer;
-    }
-
-    .button-primary {
-      background: linear-gradient(135deg, var(--primary), var(--primary-2));
-      color: #08111f;
-      box-shadow: 0 14px 34px rgba(124,156,255,.28);
-    }
-
-    .button-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 18px 42px rgba(124,156,255,.38);
-    }
-
-    .button-secondary {
-      background: rgba(255,255,255,.06);
-      border-color: rgba(255,255,255,.12);
-      color: var(--text);
-    }
-
-    .button-secondary:hover {
-      background: rgba(255,255,255,.1);
-    }
-
-    .hero {
-      padding: 72px 0 48px;
-    }
-
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 1.1fr .9fr;
-      gap: 36px;
-      align-items: center;
-    }
-
-    .eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 14px;
-      border-radius: 999px;
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.08);
-      color: var(--muted);
-      font-size: 14px;
-      margin-bottom: 18px;
-    }
-
-    .eyebrow-dot {
-      width: 10px; height: 10px; border-radius: 50%; background: var(--success);
-      box-shadow: 0 0 0 6px rgba(114,213,155,.14);
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(40px, 6vw, 70px);
-      line-height: .98;
-      letter-spacing: -0.04em;
-      max-width: 12ch;
-    }
-
-    .hero p {
-      margin: 20px 0 28px;
-      font-size: 19px;
-      line-height: 1.65;
-      color: var(--muted);
-      max-width: 58ch;
-    }
-
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 14px;
-      margin-bottom: 26px;
-    }
-
-    .hero-points {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px 16px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .hero-points span {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .hero-points i {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      display: inline-grid;
-      place-items: center;
-      background: rgba(114,213,155,.16);
-      color: var(--success);
-      font-style: normal;
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .hero-card {
-      position: relative;
-      padding: 24px;
-      border-radius: 28px;
-      border: 1px solid var(--line);
-      background: linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.05));
-      box-shadow: var(--shadow);
-      overflow: hidden;
-    }
-
-    .hero-card::before {
-      content: "";
-      position: absolute;
-      inset: -25% auto auto -15%;
-      width: 220px;
-      height: 220px;
-      background: radial-gradient(circle, rgba(124,156,255,.22), transparent 70%);
-      pointer-events: none;
-    }
-
-    .app-preview {
-      display: grid;
-      gap: 18px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .mini-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .mini-pill {
-      padding: 10px 12px;
-      border-radius: 14px;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.08);
-      color: var(--muted);
-      font-size: 13px;
-    }
-
-    .dropzone-preview {
-      border: 1.5px dashed rgba(155,228,255,.4);
-      background: linear-gradient(180deg, rgba(155,228,255,.09), rgba(255,255,255,.04));
-      border-radius: 22px;
-      padding: 28px;
-      text-align: center;
-    }
-
-    .dropzone-preview strong {
-      display: block;
-      font-size: 20px;
-      margin-bottom: 8px;
-    }
-
-    .dropzone-preview p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    .preview-table {
-      background: rgba(255,255,255,.05);
-      border: 1px solid rgba(255,255,255,.08);
-      border-radius: 20px;
-      overflow: hidden;
-    }
-
-    .preview-table table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 14px;
-    }
-
-    .preview-table th,
-    .preview-table td {
-      padding: 14px 16px;
-      text-align: left;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-    }
-
-    .preview-table th {
-      color: var(--muted);
-      font-weight: 600;
-      font-size: 13px;
-    }
-
-    .preview-table tr:last-child td { border-bottom: none; }
-    .preview-table tfoot td {
-      font-weight: 800;
-      color: var(--text);
-      background: rgba(255,255,255,.04);
-    }
-
-    section {
-      padding: 36px 0;
-    }
-
-    .section-title {
-      margin: 0 0 12px;
-      font-size: clamp(30px, 4vw, 46px);
-      line-height: 1.05;
-      letter-spacing: -0.03em;
-    }
-
-    .section-lead {
-      margin: 0;
-      max-width: 66ch;
-      color: var(--muted);
-      font-size: 17px;
-      line-height: 1.7;
-    }
-
-    .problem-grid,
-    .steps,
-    .feature-grid,
-    .pricing-grid,
-    .faq-grid {
-      display: grid;
-      gap: 18px;
-      margin-top: 28px;
-    }
-
-    .problem-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .steps {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .feature-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .pricing-grid {
-      grid-template-columns: repeat(4, 1fr);
-      align-items: stretch;
-    }
-
-    .faq-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-
-    .card {
-      padding: 24px;
-      border-radius: var(--radius);
-      background: var(--card);
-      border: 1px solid var(--line);
-      box-shadow: 0 18px 40px rgba(0,0,0,.16);
-    }
-
-    .card strong,
-    .step-number,
-    .price {
-      display: block;
-    }
-
-    .problem-icon,
-    .feature-icon {
-      width: 46px;
-      height: 46px;
-      border-radius: 16px;
-      display: grid;
-      place-items: center;
-      margin-bottom: 16px;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.08);
-      font-size: 20px;
-    }
-
-    .card h3 {
-      margin: 0 0 10px;
-      font-size: 22px;
-      letter-spacing: -0.02em;
-    }
-
-    .card p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.7;
-      font-size: 15px;
-    }
-
-    .step-number {
-      width: 52px;
-      height: 52px;
-      border-radius: 18px;
-      margin-bottom: 16px;
-      display: grid;
-      place-items: center;
-      font-weight: 900;
-      font-size: 18px;
-      background: linear-gradient(135deg, var(--primary), var(--primary-2));
-      color: #08111f;
-      box-shadow: 0 12px 28px rgba(124,156,255,.28);
-    }
-
-    .feature-list {
-      list-style: none;
-      padding: 0;
-      margin: 16px 0 0;
-      display: grid;
-      gap: 12px;
-    }
-
-    .feature-list li {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      color: var(--muted);
-      line-height: 1.55;
-      font-size: 15px;
-    }
-
-    .feature-list li::before {
-      content: "✓";
-      color: var(--success);
-      font-weight: 800;
-      margin-top: 1px;
-    }
-
-    .pricing-card {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      padding: 24px;
-      border-radius: var(--radius);
-      background: var(--card);
-      border: 1px solid var(--line);
-      min-height: 100%;
-    }
-
-    .pricing-card.popular {
-      background: linear-gradient(180deg, rgba(124,156,255,.14), rgba(255,255,255,.06));
-      border-color: rgba(155,228,255,.35);
-      box-shadow: 0 25px 60px rgba(124,156,255,.16);
-    }
-
-    .badge {
-      position: absolute;
-      top: 18px;
-      right: 18px;
-      padding: 8px 10px;
-      border-radius: 999px;
-      background: rgba(114,213,155,.16);
-      color: #bff4d2;
-      border: 1px solid rgba(114,213,155,.24);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .plan-name {
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .08em;
-    }
-
-    .price {
-      font-size: 42px;
-      font-weight: 900;
-      letter-spacing: -0.04em;
-    }
-
-    .price small {
-      font-size: 15px;
-      color: var(--muted);
-      font-weight: 600;
-      margin-left: 6px;
-    }
-
-    .plan-note {
-      color: var(--muted);
-      line-height: 1.7;
-      font-size: 15px;
-      min-height: 50px;
-    }
-
-    .cta {
-      padding: 40px 0 80px;
-    }
-
-    .cta-card {
-      padding: 34px;
-      border-radius: 32px;
-      background: linear-gradient(135deg, rgba(124,156,255,.16), rgba(155,228,255,.12));
-      border: 1px solid rgba(155,228,255,.18);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 24px;
-      box-shadow: var(--shadow);
-    }
-
-    .cta-copy h2 {
-      margin: 0 0 10px;
-      font-size: clamp(28px, 3.5vw, 42px);
-      line-height: 1.05;
-      letter-spacing: -0.03em;
-    }
-
-    .cta-copy p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.7;
-      max-width: 56ch;
-    }
-
-    footer {
-      border-top: 1px solid rgba(255,255,255,.06);
-      padding: 20px 0 36px;
-      color: var(--muted);
-      font-size: 14px;
-    }
-
-    .footer-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    @media (max-width: 1080px) {
-      .hero-grid,
-      .problem-grid,
-      .pricing-grid,
-      .faq-grid,
-      .steps,
-      .feature-grid,
-      .cta-card {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .hero-grid,
-      .cta-card {
-        display: grid;
-      }
-    }
-
-    @media (max-width: 760px) {
-      .nav a:not(.button) { display: none; }
-      .hero { padding-top: 40px; }
-      .hero-grid,
-      .problem-grid,
-      .pricing-grid,
-      .faq-grid,
-      .steps,
-      .feature-grid,
-      .cta-card {
-        grid-template-columns: 1fr;
-      }
-
-      .topbar-inner { padding: 14px 0; }
-      h1 { max-width: none; }
-      .hero p { font-size: 17px; }
-      .cta-card { padding: 26px; }
-      .card, .pricing-card { padding: 20px; }
+        radial-gradient(circle at 0% 0%, rgba(140,168,255,.22), transparent 24%),
+        radial-gradient(circle at 100% 0%, rgba(149,239,255,.18), transparent 24%),
+        linear-gradient(180deg, var(--bg), var(--bg-soft));
+    }
+    a{text-decoration:none;color:inherit}
+    .container{width:min(var(--max), calc(100% - 28px)); margin:0 auto}
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter:blur(18px);
+      background:rgba(7,17,31,.72);
+      border-bottom:1px solid rgba(255,255,255,.06);
+    }
+    .topbar-inner{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 0}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:800}
+    .brand-mark{
+      width:42px;height:42px;border-radius:14px;display:grid;place-items:center;
+      background:linear-gradient(135deg,var(--primary),var(--secondary));
+      color:#07111f;font-weight:900;box-shadow:0 14px 30px rgba(140,168,255,.35)
+    }
+    .nav{display:flex;align-items:center;gap:18px;color:var(--muted);font-size:14px}
+    .nav a:hover{color:var(--text)}
+    .button{
+      display:inline-flex;align-items:center;justify-content:center;gap:10px;
+      padding:14px 20px;border-radius:18px;font-weight:800;cursor:pointer;
+      border:1px solid transparent;transition:.2s ease
+    }
+    .button:hover{transform:translateY(-1px)}
+    .button-primary{
+      background:linear-gradient(135deg,var(--primary),var(--secondary));
+      color:#07111f;box-shadow:0 16px 36px rgba(140,168,255,.3)
+    }
+    .button-secondary{
+      background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1)
+    }
+    .hero{padding:76px 0 48px}
+    .hero-grid{display:grid;grid-template-columns:1.02fr .98fr;gap:28px;align-items:center}
+    .eyebrow{
+      display:inline-flex;align-items:center;gap:10px;padding:10px 14px;border-radius:999px;
+      background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+      color:var(--muted);font-size:14px;margin-bottom:18px
+    }
+    .dot{width:10px;height:10px;border-radius:50%;background:var(--success);box-shadow:0 0 0 6px rgba(121,216,165,.15)}
+    h1{margin:0;font-size:clamp(42px,6vw,74px);line-height:.97;letter-spacing:-.05em;max-width:10.5ch}
+    .hero p{margin:20px 0 28px;color:var(--muted);font-size:19px;line-height:1.7;max-width:58ch}
+    .hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+    .hero-points{display:flex;flex-wrap:wrap;gap:10px 16px;color:var(--muted);font-size:14px}
+    .hero-points span{display:inline-flex;align-items:center;gap:8px}
+    .hero-points i{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;background:rgba(121,216,165,.16);color:var(--success);font-style:normal;font-size:12px;font-weight:800}
+    .hero-card,.card,.price-card,.faq-item,.cta-box{
+      background:var(--panel);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:28px
+    }
+    .hero-card{padding:22px}
+    .window{border-radius:24px;overflow:hidden;background:#0b1323;border:1px solid rgba(255,255,255,.08)}
+    .window-top{display:flex;align-items:center;gap:8px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.03)}
+    .window-top span{width:11px;height:11px;border-radius:50%;background:rgba(255,255,255,.22)}
+    .window-body{padding:18px}
+    .mock-grid{display:grid;grid-template-columns:1fr .88fr;gap:14px}
+    .mock-upload,.mock-summary,.mock-table,.mock-tags{
+      border-radius:20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)
+    }
+    .mock-upload{padding:18px}
+    .mock-dashed{
+      border:1.5px dashed rgba(149,239,255,.35);border-radius:18px;
+      padding:20px;background:linear-gradient(180deg, rgba(149,239,255,.08), rgba(255,255,255,.02));
+      text-align:center
+    }
+    .mock-icon{width:58px;height:58px;border-radius:18px;margin:0 auto 12px;display:grid;place-items:center;background:rgba(255,255,255,.08);font-size:28px}
+    .mock-summary,.mock-tags{padding:18px}
+    .mock-summary h3,.mock-table h3,.mock-tags h3{margin:0 0 14px;font-size:16px}
+    .kpis{display:grid;gap:10px}
+    .kpis div{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:14px}
+    .kpis strong{color:var(--text)}
+    .mock-tags-list{display:flex;flex-wrap:wrap;gap:10px}
+    .tag{display:inline-flex;align-items:center;padding:8px 12px;border-radius:999px;background:rgba(121,216,165,.14);color:var(--success);font-size:12px;font-weight:800}
+    .tag.alt{background:rgba(255,214,138,.14);color:var(--warning)}
+    .tag.blue{background:rgba(140,168,255,.15);color:var(--secondary)}
+    .mock-table{padding:18px;margin-top:14px}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{padding:12px 10px;border-bottom:1px solid rgba(255,255,255,.06);text-align:left}
+    th{color:var(--muted);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+    .section{padding:36px 0}
+    .section-title{text-align:center;max-width:760px;margin:0 auto 24px}
+    .section-title h2{margin:0 0 12px;font-size:clamp(30px,4vw,46px);letter-spacing:-.04em}
+    .section-title p{margin:0;color:var(--muted);font-size:18px;line-height:1.7}
+    .card-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .card{padding:24px}
+    .card h3{margin:0 0 10px;font-size:22px}
+    .card p{margin:0;color:var(--muted);line-height:1.7}
+    .step-number{
+      width:42px;height:42px;border-radius:14px;display:grid;place-items:center;
+      background:linear-gradient(135deg,var(--primary),var(--secondary));color:#07111f;
+      font-weight:900;margin-bottom:16px
+    }
+    .pricing{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+    .price-card{position:relative;padding:24px}
+    .price-card.featured{
+      transform:translateY(-6px);
+      background:linear-gradient(180deg, rgba(140,168,255,.18), rgba(255,255,255,.06));
+      border-color:rgba(149,239,255,.22)
+    }
+    .ribbon{
+      position:absolute;top:16px;right:16px;padding:8px 10px;border-radius:999px;
+      background:rgba(149,239,255,.14);color:var(--secondary);font-size:12px;font-weight:800
+    }
+    .price-label{font-size:14px;color:var(--muted);margin-bottom:10px}
+    .price{font-size:40px;font-weight:900;letter-spacing:-.05em}
+    .price small{font-size:15px;color:var(--muted);font-weight:700}
+    .price-card ul{list-style:none;padding:0;margin:18px 0 0;display:grid;gap:10px;color:var(--muted)}
+    .price-card li::before{content:"✓";color:var(--success);margin-right:10px}
+    .faq{display:grid;gap:14px;max-width:860px;margin:0 auto}
+    .faq-item{padding:22px}
+    .faq-item h3{margin:0 0 8px;font-size:20px}
+    .faq-item p{margin:0;color:var(--muted);line-height:1.7}
+    .cta-box{padding:28px;display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap}
+    .cta-copy h2{margin:0 0 8px;font-size:34px;letter-spacing:-.04em}
+    .cta-copy p{margin:0;color:var(--muted);line-height:1.7;max-width:54ch}
+    .footer{padding:34px 0 60px;color:var(--muted);font-size:14px}
+    @media (max-width:1024px){
+      .hero-grid,.card-grid,.pricing{grid-template-columns:1fr 1fr}
+      .mock-grid{grid-template-columns:1fr}
+    }
+    @media (max-width:760px){
+      .nav{display:none}
+      .hero{padding:50px 0 30px}
+      .hero-grid,.card-grid,.pricing{grid-template-columns:1fr}
+      h1{max-width:none}
+      .cta-box{align-items:flex-start}
     }
   </style>
 </head>
 <body>
   <header class="topbar">
     <div class="container topbar-inner">
-      <a class="brand" href="#top">
-        <span class="brand-mark">GL</span>
-        <span>GL Api</span>
+      <a class="brand" href="./">
+        <div class="brand-mark">IF</div>
+        <span>InvoiceFlow</span>
       </a>
       <nav class="nav">
-        <a href="#how">So funktioniert’s</a>
-        <a href="#features">Vorteile</a>
-        <a href="#pricing">Preise</a>
-        <a class="button button-primary" href="./app/index.html">Kostenlos testen</a>
+        <a href="#vorteile">Vorteile</a>
+        <a href="#so-gehts">So funktioniert's</a>
+        <a href="#preise">Preise</a>
+        <a href="#faq">FAQ</a>
       </nav>
+      <a class="button button-primary" href="./app/">Jetzt ausprobieren</a>
     </div>
   </header>
 
-  <main id="top">
+  <main>
     <section class="hero">
       <div class="container hero-grid">
         <div>
-          <div class="eyebrow">
-            <span class="eyebrow-dot"></span>
-            Für Freelancer, Selbstständige und kleine Unternehmen
-          </div>
-          <h1>Nie wieder Rechnungen manuell abtippen.</h1>
-          <p>
-            Lade deine Rechnungen als PDF hoch und erhalte automatisch eine saubere Übersicht mit
-            Lieferant, Datum, Betrag und MwSt. Statt Chaos in Ordnern hast du in Sekunden eine klare Tabelle.
-          </p>
+          <div class="eyebrow"><span class="dot"></span> Für Freelancer, kleine Teams und alle mit Rechnungs-Chaos</div>
+          <h1>Rechnungen hochladen. Übersicht bekommen.</h1>
+          <p>Keine Zettelwirtschaft, kein Copy-Paste, kein unnötiges Rumgeklicke. Du lädst deine Rechnung hoch und bekommst sofort eine saubere Tabelle mit Betrag, MwSt., Lieferant und Kostenstelle.</p>
           <div class="hero-actions">
-            <a class="button button-primary" href="./app/index.html">Jetzt kostenlos testen</a>
-            <a class="button button-secondary" href="#pricing">Preise ansehen</a>
+            <a class="button button-primary" href="./app/">Kostenlos testen</a>
+            <a class="button button-secondary" href="#preise">Preise ansehen</a>
           </div>
           <div class="hero-points">
-            <span><i>✓</i>Kein Setup</span>
-            <span><i>✓</i>Keine Technik nötig</span>
-            <span><i>✓</i>Einfach PDF hochladen</span>
+            <span><i>✓</i> In Sekunden startklar</span>
+            <span><i>✓</i> Ohne Technik-Gelaber</span>
+            <span><i>✓</i> Mit Kostenstellen</span>
           </div>
         </div>
 
         <div class="hero-card">
-          <div class="app-preview">
-            <div class="mini-top">
-              <div class="brand">
-                <span class="brand-mark" style="width:34px;height:34px;border-radius:10px;">GL</span>
-                <span>Invoice Overview</span>
+          <div class="window">
+            <div class="window-top"><span></span><span></span><span></span></div>
+            <div class="window-body">
+              <div class="mock-grid">
+                <div class="mock-upload">
+                  <div class="mock-dashed">
+                    <div class="mock-icon">📄</div>
+                    <strong>Rechnung reinziehen</strong>
+                    <p style="margin:8px 0 0;color:var(--muted)">PDF auswählen, kurz warten, fertig.</p>
+                  </div>
+                </div>
+                <div class="mock-summary">
+                  <h3>Auf einen Blick</h3>
+                  <div class="kpis">
+                    <div><span>Rechnungen</span><strong>24</strong></div>
+                    <div><span>Summe</span><strong>4.285,60 €</strong></div>
+                    <div><span>MwSt.</span><strong>683,11 €</strong></div>
+                    <div><span>Unsicher</span><strong>2 geprüft</strong></div>
+                  </div>
+                </div>
               </div>
-              <div class="mini-pill">Free Plan · 2 / 5 Invoices</div>
-            </div>
 
-            <div class="dropzone-preview">
-              <strong>Rechnung hochladen</strong>
-              <p>PDF per Drag & Drop hineinziehen oder einfach anklicken und auswählen.</p>
-            </div>
+              <div class="mock-table">
+                <h3>Beispiel-Tabelle</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Lieferant</th>
+                      <th>Datum</th>
+                      <th>Gesamt</th>
+                      <th>MwSt.</th>
+                      <th>Kostenstelle</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Adobe</td>
+                      <td>03.03.2026</td>
+                      <td>71,39 €</td>
+                      <td>11,40 €</td>
+                      <td>Software</td>
+                    </tr>
+                    <tr>
+                      <td>Meta Ads</td>
+                      <td>06.03.2026</td>
+                      <td>280,00 €</td>
+                      <td>0,00 €</td>
+                      <td>Marketing</td>
+                    </tr>
+                    <tr>
+                      <td>Shell</td>
+                      <td>08.03.2026</td>
+                      <td>92,14 €</td>
+                      <td>14,71 €</td>
+                      <td>Fahrzeug</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-            <div class="preview-table">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Lieferant</th>
-                    <th>Datum</th>
-                    <th>Gesamt</th>
-                    <th>MwSt.</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>Adobe</td>
-                    <td>11.03.2026</td>
-                    <td>59,49 €</td>
-                    <td>9,49 €</td>
-                  </tr>
-                  <tr>
-                    <td>Hetzner</td>
-                    <td>09.03.2026</td>
-                    <td>24,90 €</td>
-                    <td>3,97 €</td>
-                  </tr>
-                  <tr>
-                    <td>Deutsche Telekom</td>
-                    <td>04.03.2026</td>
-                    <td>69,95 €</td>
-                    <td>11,17 €</td>
-                  </tr>
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colspan="2">Gesamt</td>
-                    <td>154,34 €</td>
-                    <td>24,63 €</td>
-                  </tr>
-                </tfoot>
-              </table>
+              <div class="mock-tags">
+                <h3>Automatisch sortiert</h3>
+                <div class="mock-tags-list">
+                  <span class="tag">Software</span>
+                  <span class="tag alt">Marketing</span>
+                  <span class="tag blue">Büro</span>
+                  <span class="tag">Fahrzeug</span>
+                  <span class="tag alt">Reisen</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <section>
+    <section class="section" id="vorteile">
       <div class="container">
-        <h2 class="section-title">Rechnungen sind selten das Problem. Das Chaos drumherum schon.</h2>
-        <p class="section-lead">
-          Rechnungen kommen per Mail, als Download, als Scan oder liegen irgendwo im Ordner. Spätestens wenn du
-          den Überblick brauchst, beginnt das nervige Zusammensuchen und Abtippen. Genau das nimmt dir das Tool ab.
-        </p>
-        <div class="problem-grid">
+        <div class="section-title">
+          <h2>Was dir das im Alltag abnimmt</h2>
+          <p>Nicht noch ein Tool, das mehr Arbeit macht. Sondern eins, das dir die nervige Arbeit wirklich wegnimmt.</p>
+        </div>
+        <div class="card-grid">
           <article class="card">
-            <div class="problem-icon">📥</div>
-            <h3>Alles liegt verteilt</h3>
-            <p>Ein Teil im Postfach, ein Teil im Download-Ordner, ein Teil als Screenshot oder Scan.</p>
+            <h3>Kein Abtippen mehr</h3>
+            <p>Du musst Lieferant, Datum oder Betrag nicht mehr per Hand raussuchen. Die wichtigsten Infos landen direkt in deiner Übersicht.</p>
           </article>
           <article class="card">
-            <div class="problem-icon">⌨️</div>
-            <h3>Manuelles Eintragen kostet Zeit</h3>
-            <p>Lieferant, Datum, Gesamtbetrag und MwSt. immer wieder von Hand eintragen ist unnötig zäh.</p>
+            <h3>Alles an einem Ort</h3>
+            <p>Statt Rechnungen in Mails, Downloads und Ordnern zu vergessen, hast du sie gesammelt in einer Tabelle mit Summen und Status.</p>
           </article>
           <article class="card">
-            <div class="problem-icon">😵</div>
-            <h3>Der Überblick fehlt</h3>
-            <p>Am Ende weißt du nicht mehr, was schon drin ist, was fehlt und wie viel du insgesamt ausgegeben hast.</p>
+            <h3>Kostenstellen direkt mit drin</h3>
+            <p>Rechnungen werden automatisch einer passenden Kostenstelle zugeordnet. So erkennst du schneller, wo dein Geld hingeht.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <section id="how">
+    <section class="section" id="so-gehts">
       <div class="container">
-        <h2 class="section-title">So einfach soll es sein.</h2>
-        <p class="section-lead">
-          Keine Einarbeitung, keine komplizierten Einstellungen, kein Technik-Kram. Einfach hochladen und direkt eine Übersicht bekommen.
-        </p>
-        <div class="steps">
+        <div class="section-title">
+          <h2>So funktioniert's</h2>
+          <p>Du brauchst keine Einweisung und kein Onboarding. Das Ding soll sich von selbst erklären.</p>
+        </div>
+        <div class="card-grid">
           <article class="card">
-            <span class="step-number">1</span>
+            <div class="step-number">1</div>
             <h3>Rechnung hochladen</h3>
-            <p>Du lädst eine PDF-Datei hoch. Das funktioniert direkt im Browser, ohne Installation.</p>
+            <p>PDF auswählen oder reinziehen. Mehr musst du am Anfang nicht machen.</p>
           </article>
           <article class="card">
-            <span class="step-number">2</span>
-            <h3>Daten werden erkannt</h3>
-            <p>Lieferant, Rechnungsdatum, Gesamtbetrag und MwSt. werden automatisch ausgelesen.</p>
+            <div class="step-number">2</div>
+            <h3>Infos werden erkannt</h3>
+            <p>Lieferant, Datum, Netto, MwSt., Gesamtbetrag und Kostenstelle werden automatisch ausgelesen.</p>
           </article>
           <article class="card">
-            <span class="step-number">3</span>
-            <h3>Alles landet in deiner Tabelle</h3>
-            <p>Jede neue Rechnung ergänzt deine Übersicht. Summen werden automatisch mitgerechnet.</p>
+            <div class="step-number">3</div>
+            <h3>Übersicht wächst mit</h3>
+            <p>Jede neue Rechnung landet sofort in deiner Liste. Dazu siehst du Summen, Hinweise und alles an einem Platz.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <section id="features">
+    <section class="section">
       <div class="container">
-        <h2 class="section-title">Gebaut für Menschen, nicht für Entwickler.</h2>
-        <p class="section-lead">
-          Du musst nichts über APIs, JSON oder Integrationen wissen. Das Produkt ist so aufgebaut, dass du direkt den Nutzen siehst.
-        </p>
-        <div class="feature-grid">
+        <div class="section-title">
+          <h2>Für wen das gedacht ist</h2>
+          <p>Für Leute, die Rechnungen nicht „managen“ wollen – sondern einfach nur schnell im Griff haben möchten.</p>
+        </div>
+        <div class="card-grid">
           <article class="card">
-            <div class="feature-icon">🧾</div>
-            <h3>Die wichtigen Infos sofort im Blick</h3>
-            <p>Die Übersicht konzentriert sich bewusst auf das, was im Alltag am wichtigsten ist.</p>
-            <ul class="feature-list">
-              <li>Lieferant automatisch erkannt</li>
-              <li>Rechnungsdatum direkt sichtbar</li>
-              <li>Gesamtbetrag pro Rechnung</li>
-              <li>MwSt. sauber getrennt dargestellt</li>
-            </ul>
+            <h3>Freelancer</h3>
+            <p>Wenn du nur schnell sehen willst, was reingekommen ist und wofür du Geld ausgegeben hast.</p>
           </article>
           <article class="card">
-            <div class="feature-icon">📊</div>
-            <h3>Wachsende Tabelle statt wilder Zettelwirtschaft</h3>
-            <p>Mit jeder hochgeladenen Rechnung wird deine Übersicht besser und vollständiger.</p>
-            <ul class="feature-list">
-              <li>Tabelle erweitert sich automatisch</li>
-              <li>Gesamtsumme wird mitgerechnet</li>
-              <li>Auch für kleine Teams und Solo-Selbstständige praktisch</li>
-              <li>Ideal zum schnellen Sortieren und Prüfen</li>
-            </ul>
+            <h3>Kleine Unternehmen</h3>
+            <p>Wenn mehrere Rechnungen pro Woche zusammenkommen und niemand Lust auf manuelles Sortieren hat.</p>
+          </article>
+          <article class="card">
+            <h3>Chaotische Selbstständige</h3>
+            <p>Wenn Rechnungen bei dir in E-Mails, Downloads und Screenshots herumliegen und du endlich Ordnung willst.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <section id="pricing">
+    <section class="section" id="preise">
       <div class="container">
-        <h2 class="section-title">Einfache Preise, ohne Technik-Sprache.</h2>
-        <p class="section-lead">
-          Du bezahlst nicht für abstrakte Requests, sondern für das, was du wirklich nutzt: Rechnungen.
-        </p>
-        <div class="pricing-grid">
-          <article class="pricing-card">
-            <span class="plan-name">Free</span>
-            <span class="price">0€ <small>/ Monat</small></span>
-            <div class="plan-note">Zum Ausprobieren und für den ersten Eindruck.</div>
-            <ul class="feature-list">
-              <li>5 Rechnungen</li>
-              <li>Upload direkt im Browser</li>
-              <li>Übersicht mit Summen</li>
+        <div class="section-title">
+          <h2>Einfaches Pricing ohne Verwirrung</h2>
+          <p>Keine Requests, keine technischen Limits, kein Bullshit. Du zahlst nach Rechnungen.</p>
+        </div>
+
+        <div class="pricing">
+          <article class="price-card">
+            <div class="price-label">Free</div>
+            <div class="price">0€ <small>/ einmal testen</small></div>
+            <ul>
+              <li>5 Rechnungen inklusive</li>
+              <li>Volle Übersicht</li>
+              <li>Kostenstellen dabei</li>
             </ul>
-            <a class="button button-secondary" href="./app/index.html">Kostenlos testen</a>
           </article>
 
-          <article class="pricing-card popular">
-            <span class="badge">Beliebt</span>
-            <span class="plan-name">Starter</span>
-            <span class="price">19€ <small>/ Monat</small></span>
-            <div class="plan-note">Für Freelancer und kleine Unternehmen mit regelmäßigem Bedarf.</div>
-            <ul class="feature-list">
+          <article class="price-card featured">
+            <div class="ribbon">Beliebt</div>
+            <div class="price-label">Starter</div>
+            <div class="price">19€ <small>/ Monat</small></div>
+            <ul>
               <li>100 Rechnungen</li>
-              <li>Schneller Überblick</li>
-              <li>Perfekt für den Alltag</li>
+              <li>Für Freelancer & Solo-Selbstständige</li>
+              <li>Schneller Einstieg ohne Aufwand</li>
             </ul>
-            <a class="button button-primary" href="./app/index.html">Mit Demo starten</a>
           </article>
 
-          <article class="pricing-card">
-            <span class="plan-name">Business</span>
-            <span class="price">49€ <small>/ Monat</small></span>
-            <div class="plan-note">Für mehr Volumen und Teams, die Ordnung in ihre Rechnungen bringen wollen.</div>
-            <ul class="feature-list">
+          <article class="price-card">
+            <div class="price-label">Business</div>
+            <div class="price">49€ <small>/ Monat</small></div>
+            <ul>
               <li>500 Rechnungen</li>
-              <li>Mehr Spielraum</li>
-              <li>Für laufende Prozesse</li>
+              <li>Für kleine Teams</li>
+              <li>Mehr Volumen, gleicher Workflow</li>
             </ul>
-            <a class="button button-secondary" href="./app/index.html">Demo ansehen</a>
           </article>
 
-          <article class="pricing-card">
-            <span class="plan-name">Pro</span>
-            <span class="price">99€ <small>/ Monat</small></span>
-            <div class="plan-note">Für hohe Mengen und klare Übersicht ohne manuelle Listenpflege.</div>
-            <ul class="feature-list">
+          <article class="price-card">
+            <div class="price-label">Pro</div>
+            <div class="price">99€ <small>/ Monat</small></div>
+            <ul>
               <li>1500 Rechnungen</li>
-              <li>Für größere Workloads</li>
-              <li>Maximale Einfachheit</li>
+              <li>Für mehr laufende Belege</li>
+              <li>Alles ordentlich an einem Ort</li>
             </ul>
-            <a class="button button-secondary" href="./app/index.html">Jetzt testen</a>
           </article>
         </div>
       </div>
     </section>
 
-    <section>
+    <section class="section" id="faq">
       <div class="container">
-        <h2 class="section-title">Häufige Fragen</h2>
-        <div class="faq-grid">
-          <article class="card">
-            <h3>Brauche ich technisches Wissen?</h3>
-            <p>Nein. Das Tool ist bewusst so gebaut, dass du einfach eine Rechnung hochlädst und direkt eine Übersicht bekommst.</p>
+        <div class="section-title">
+          <h2>Fragen, die wahrscheinlich kommen</h2>
+        </div>
+
+        <div class="faq">
+          <article class="faq-item">
+            <h3>Muss ich mich damit auskennen?</h3>
+            <p>Nein. Du lädst einfach deine Rechnung hoch. Der Rest passiert im Hintergrund.</p>
           </article>
-          <article class="card">
-            <h3>Was sehe ich nach dem Upload?</h3>
-            <p>Du bekommst die wichtigsten Rechnungsdaten in einer Tabelle: Lieferant, Datum, Gesamtbetrag und MwSt.</p>
+          <article class="faq-item">
+            <h3>Was wird erkannt?</h3>
+            <p>Lieferant, Datum, Netto, MwSt., Gesamtbetrag und eine passende Kostenstelle. Wenn etwas nicht ganz eindeutig ist, bekommst du einen Hinweis dazu.</p>
           </article>
-          <article class="card">
-            <h3>Muss ich etwas installieren?</h3>
-            <p>Nein. Alles läuft direkt im Browser. Du öffnest die App und lädst deine PDF-Datei hoch.</p>
-          </article>
-          <article class="card">
-            <h3>Ist das schon ein fertiges Produkt?</h3>
-            <p>Gerade ist es ein klares MVP: bewusst einfach, schnell testbar und darauf optimiert, ob es echten Nutzen bringt.</p>
+          <article class="faq-item">
+            <h3>Kann ich damit schon arbeiten oder ist das nur eine Demo?</h3>
+            <p>Du kannst es direkt ausprobieren. Es ist bewusst simpel gehalten, damit du sofort siehst, ob es dir im Alltag hilft.</p>
           </article>
         </div>
       </div>
     </section>
 
-    <section class="cta">
+    <section class="section">
       <div class="container">
-        <div class="cta-card">
+        <div class="cta-box">
           <div class="cta-copy">
-            <h2>Probier es jetzt mit einer echten Rechnung aus.</h2>
-            <p>
-              Öffne die App, lade eine PDF hoch und schau dir direkt an, wie deine Übersicht entsteht.
-              Genau so muss sich das Produkt später für echte Nutzer anfühlen: einfach, schnell und klar.
-            </p>
+            <h2>Probier's mit deiner nächsten Rechnung aus.</h2>
+            <p>Ein PDF hochladen reicht, um zu sehen, ob dir das direkt Zeit spart. Genau dafür ist die erste Version da.</p>
           </div>
-          <a class="button button-primary" href="./app/index.html">Zur App</a>
+          <a class="button button-primary" href="./app/">Jetzt kostenlos testen</a>
         </div>
       </div>
     </section>
   </main>
 
-  <footer>
-    <div class="container footer-row">
-      <div>GL Api · Rechnung hochladen statt abtippen</div>
-      <div>Demo MVP · Einfacher Invoice Workflow</div>
-    </div>
+  <footer class="footer">
+    <div class="container">InvoiceFlow · Weniger Chaos, mehr Überblick.</div>
   </footer>
 </body>
 </html>
